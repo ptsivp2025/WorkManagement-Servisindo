@@ -428,7 +428,7 @@ export default function ServicesDashboard() {
 
         {/* Logo on dark pill - ROUNDED REMOVED */}
         <div className="flex justify-center mb-6">
-          <div className="px-7 py-4 shadow-xl" style={{ background: 'rgba(255, 255, 255, 0)'}}>
+          <div className="px-7 py-4" style={{ background: 'rgba(255, 255, 255, 0)'}}>
             <img src="/logo-servisindo.png" alt="Servisindo Multimedia Service Center"
               style={{ height: '46px', width: 'auto', objectFit: 'contain' }} />
           </div>
