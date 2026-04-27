@@ -413,7 +413,11 @@ export default function ServicesDashboard() {
 
   if (!isLoggedIn) return (
     <div className="min-h-screen flex items-center justify-center p-4 relative"
-      style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1e1e 50%, #1a0505 100%)' }}>
+      style={{ backgroundImage: 'url(/IVP_Background.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {/* Dark overlay */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'linear-gradient(135deg, rgba(15,23,42,0.82) 0%, rgba(30,30,30,0.78) 50%, rgba(26,5,5,0.82) 100%)'
+      }} />
       {/* Subtle red glow */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at 30% 60%, rgba(220,38,38,0.12) 0%, transparent 60%), radial-gradient(ellipse at 75% 30%, rgba(220,38,38,0.07) 0%, transparent 50%)'
@@ -500,7 +504,7 @@ export default function ServicesDashboard() {
 
   // ── Main Layout ────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundImage: 'url(/SVC_Background.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundImage: 'url(/IVP_Background.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,255,255,0.04)' }} />
       {showSettings && <AccountSettingsModal onClose={() => setShowSettings(false)} />}
 
