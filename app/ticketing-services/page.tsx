@@ -706,7 +706,7 @@ export default function TicketingServices() {
           date: newTicket.date, status: 'In Progress', services_status: 'Verifying Warranty',
           current_team: 'Team Services', created_by: currentUser?.username || null,
           photo_url: photoUrl || null, photo_name: photoName || null,
-        }]).then(({ error }) => { if (error) console.warn('[Mirror PTS] ticket mirror failed:', error.message); });
+        }]).then(({ error }: { error: any }) => { if (error) console.warn('[Mirror PTS] ticket mirror failed:', error.message); });
       }
 
       setNewTicket({ project_name: '', address: '', customer_phone: '', sales_name: '', sales_division: '', sn_unit: '', product: '', issue_case: '', description: '', assign_name: '', date: getJakartaDateString(), photo: null });
