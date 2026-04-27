@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -512,9 +513,9 @@ export default function ServicesDashboard() {
       <header className="flex-shrink-0 shadow-md" style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(16px)', borderBottom: '2.5px solid #dc2626', zIndex: 999, position: 'relative' }}>
         <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
 
-          {/* LEFT: Logo - ROUNDED REMOVED */}
+          {/* LEFT: Logo*/}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="px-4 py-2 shadow-sm" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(220,38,38,0.2)' }}>
+            <div className="px-4 py-2 shadow-sm" style={{ background: 'rgba(255,255,255,0.95)'}}>
               <img src="/logo-servisindo.png" alt="Servisindo"
                 style={{ height: '30px', width: 'auto', objectFit: 'contain' }} />
             </div>
