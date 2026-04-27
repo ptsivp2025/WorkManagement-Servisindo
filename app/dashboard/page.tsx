@@ -424,7 +424,7 @@ export default function ServicesDashboard() {
 
         {/* Logo on dark pill */}
         <div className="flex justify-center mb-6">
-          <div className="bg-black rounded-2xl px-7 py-4 shadow-xl" style={{ border: '1px solid rgba(220,38,38,0.3)' }}>
+          <div className="rounded-2xl px-7 py-4 shadow-xl" style={{ background: 'rgba(255,255,255,0.95)', border: '1.5px solid rgba(220,38,38,0.25)' }}>
             <img src="/logo-servisindo.png" alt="Servisindo Multimedia Service Center"
               style={{ height: '46px', width: 'auto', objectFit: 'contain' }} />
           </div>
@@ -500,16 +500,17 @@ export default function ServicesDashboard() {
 
   // ── Main Layout ────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-100">
+    <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundImage: 'url(/SVC_Background.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,255,255,0.04)' }} />
       {showSettings && <AccountSettingsModal onClose={() => setShowSettings(false)} />}
 
       {/* ── HEADER ── */}
-      <header className="flex-shrink-0 bg-white shadow-md" style={{ borderBottom: '2.5px solid #dc2626', zIndex: 999 }}>
+      <header className="flex-shrink-0 shadow-md" style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(16px)', borderBottom: '2.5px solid #dc2626', zIndex: 999, position: 'relative' }}>
         <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
 
           {/* LEFT: Logo */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="bg-black rounded-xl px-4 py-2 shadow-sm" style={{ border: '1px solid rgba(220,38,38,0.2)' }}>
+            <div className="rounded-xl px-4 py-2 shadow-sm" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(220,38,38,0.2)' }}>
               <img src="/logo-servisindo.png" alt="Servisindo"
                 style={{ height: '30px', width: 'auto', objectFit: 'contain' }} />
             </div>
@@ -519,14 +520,8 @@ export default function ServicesDashboard() {
             </div>
           </div>
 
-          {/* CENTER: Active page indicator */}
-          <div className="flex-1 flex justify-center">
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"
-              style={{ background: activeItem.bg, border: `1px solid ${activeItem.border}`, color: activeItem.accent }}>
-              {activeItem.icon}
-              {activeItem.label}
-            </div>
-          </div>
+          {/* CENTER: Spacer (label removed per request) */}
+          <div className="flex-1" />
 
           {/* RIGHT: Notif + User + Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -577,7 +572,7 @@ export default function ServicesDashboard() {
         {/* SIDEBAR */}
         <aside
           className={`relative flex flex-col flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'w-[68px]' : 'w-[236px]'}`}
-          style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', boxShadow: '3px 0 18px rgba(0,0,0,0.07)', borderRight: '1px solid rgba(0,0,0,0.06)' }}>
+          style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)', boxShadow: '3px 0 18px rgba(0,0,0,0.1)', borderRight: '1px solid rgba(0,0,0,0.08)' }}>
 
           {/* Red accent top line */}
           <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg,transparent,#dc2626,transparent)' }} />
@@ -693,7 +688,7 @@ export default function ServicesDashboard() {
 
         {/* MAIN CONTENT */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden bg-white">
+          <div className="flex-1 overflow-hidden" style={{ background: "transparent" }}>
             <iframe
               key={iframeKey}
               src={activeItem.iframeUrl}
