@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -63,7 +64,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data } = await getSupabase().from('users').select('*').order('full_name');
+    const { data } = await (getSupabase().from('users') as any).select('*').order('full_name');
     if (data) setUsers(data as User[]);
     setLoading(false);
   };
@@ -71,7 +72,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
   const handleAdd = async () => {
     if (!newUser.username || !newUser.password || !newUser.full_name) { notify('error', 'Semua field wajib diisi!'); return; }
     setSaving(true);
-    const { error } = await getSupabase().from('users').insert([newUser]);
+    const { error } = await (getSupabase().from('users') as any).insert([newUser]);
     setSaving(false);
     if (error) { notify('error', 'Gagal: ' + error.message); return; }
     notify('success', 'Akun berhasil ditambahkan!');
@@ -83,7 +84,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
   const handleSave = async () => {
     if (!editingUser) return;
     setSaving(true);
-    const { error } = await getSupabase().from('users').update(editingUser).eq('id', editingUser.id);
+    const { error } = await (getSupabase().from('users') as any).update(editingUser).eq('id', editingUser.id);
     setSaving(false);
     if (error) { notify('error', 'Gagal: ' + error.message); return; }
     notify('success', 'Berhasil diperbarui!');
@@ -93,7 +94,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus akun ini?')) return;
-    await getSupabase().from('users').delete().eq('id', id);
+    await (getSupabase().from('users') as any).delete().eq('id', id);
     notify('success', 'Akun dihapus.');
     fetchUsers();
   };
@@ -101,7 +102,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
   const inp = 'w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400 outline-none';
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-slate-800">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-200">
 
         {/* Header */}
@@ -186,7 +187,7 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
                       className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-200 outline-none" />
                   </div>
                   {users.filter(u => u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.username?.toLowerCase().includes(searchQuery.toLowerCase())).map(user => (
-                    <div key={user.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
+                    <div key={user.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 text-slate-800">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
                           style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
@@ -347,7 +348,7 @@ export default function ServicesDashboard() {
     if (!currentUser) return;
     const items: NotifItem[] = [];
     try {
-      const { data } = await getSupabasePTS().from('tickets')
+      const { data } = await (getSupabasePTS().from('tickets') as any)
         .select('id, project_name, services_status')
         .eq('current_team', 'Team Services')
         .neq('services_status', 'Solved')
@@ -357,7 +358,7 @@ export default function ServicesDashboard() {
         items.push({ id: `t-${t.id}`, title: t.project_name, subtitle: `Status: ${t.services_status}`, type: 'ticket' }));
     } catch { /* ignore */ }
     try {
-      const { data } = await getSupabase().from('reminders')
+      const { data } = await (getSupabase().from('reminders') as any)
         .select('id, project_name, category, due_date')
         .neq('status', 'done').neq('status', 'cancelled')
         .order('due_date', { ascending: true }).limit(15);
@@ -379,7 +380,7 @@ export default function ServicesDashboard() {
     if (!loginForm.username || !loginForm.password) { setLoginError('Username dan password wajib diisi!'); return; }
     setLoginLoading(true); setLoginError('');
     try {
-      const { data, error } = await getSupabase().from('users').select('*')
+      const { data, error } = await (getSupabase().from('users') as any).select('*')
         .eq('username', loginForm.username).eq('password', loginForm.password).single();
       if (error || !data) { setLoginError('Username atau password salah!'); setLoginLoading(false); return; }
       const user = data as User;
@@ -426,9 +427,9 @@ export default function ServicesDashboard() {
       <div className="relative z-10 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-md"
         style={{ border: '1.5px solid rgba(220,38,38,0.25)' }}>
 
-        {/* Logo on dark pill */}
+        {/* Logo on dark pill - ROUNDED REMOVED */}
         <div className="flex justify-center mb-6">
-          <div className="rounded-2xl px-7 py-4 shadow-xl" style={{ background: 'rgba(255,255,255,0.95)', border: '1.5px solid rgba(220,38,38,0.25)' }}>
+          <div className="px-7 py-4 shadow-xl" style={{ background: 'rgba(255,255,255,0.95)', border: '1.5px solid rgba(220,38,38,0.25)' }}>
             <img src="/logo-servisindo.png" alt="Servisindo Multimedia Service Center"
               style={{ height: '46px', width: 'auto', objectFit: 'contain' }} />
           </div>
@@ -512,9 +513,9 @@ export default function ServicesDashboard() {
       <header className="flex-shrink-0 shadow-md" style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(16px)', borderBottom: '2.5px solid #dc2626', zIndex: 999, position: 'relative' }}>
         <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
 
-          {/* LEFT: Logo */}
+          {/* LEFT: Logo - ROUNDED REMOVED */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="rounded-xl px-4 py-2 shadow-sm" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(220,38,38,0.2)' }}>
+            <div className="px-4 py-2 shadow-sm" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(220,38,38,0.2)' }}>
               <img src="/logo-servisindo.png" alt="Servisindo"
                 style={{ height: '30px', width: 'auto', objectFit: 'contain' }} />
             </div>
@@ -524,7 +525,7 @@ export default function ServicesDashboard() {
             </div>
           </div>
 
-          {/* CENTER: Spacer (label removed per request) */}
+          {/* CENTER: Spacer */}
           <div className="flex-1" />
 
           {/* RIGHT: Notif + User + Buttons */}
