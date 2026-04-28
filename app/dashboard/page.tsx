@@ -164,7 +164,7 @@ export default function ServicesDashboard() {
 
   if (!isLoggedIn) return (
     <div className="min-h-screen flex items-center justify-center p-4 relative" style={{ backgroundImage: 'url(/IVP_Background.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/97" />
       <div className="relative z-10 bg-white/97 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-md" style={{ border: '1.5px solid rgba(220,38,38,0.25)' }}>
         {/* Logo — transparent, no rounded, no shadow */}
         <div className="flex justify-center mb-6">
