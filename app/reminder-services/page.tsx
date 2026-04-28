@@ -2444,29 +2444,31 @@ export default function ReminderSchedulePage() {
                                     {(isAdmin || currentUser?.role === 'team') && (
                                       <button onClick={() => {
                                         const pd = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-                                        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder — ${r.project_name}</title>
-<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}
-h1{font-size:20px;font-weight:800;color:#dc2626;margin-bottom:4px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
-.field{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}
-.label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:3px}
-.value{font-size:13px;font-weight:600;color:#1e293b}
-.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
-</style></head><body>
-<h1>📅 Reminder Schedule — Servisindo</h1>
-<p style="font-size:12px;color:#64748b">Dicetak: ${pd}</p>
-<div class="grid">
-<div class="field"><div class="label">Project</div><div class="value">${r.project_name}</div></div>
-<div class="field"><div class="label">Kategori</div><div class="value">${r.category}</div></div>
-<div class="field"><div class="label">Handler</div><div class="value">${r.assign_name || r.assigned_to}</div></div>
-<div class="field"><div class="label">Status</div><div class="value">${r.status}</div></div>
-<div class="field"><div class="label">Tanggal</div><div class="value">${r.due_date} ${r.due_time || ''}</div></div>
-<div class="field"><div class="label">Sales</div><div class="value">${r.sales_name || '—'}${r.sales_division ? ' · '+r.sales_division : ''}</div></div>
-${r.address ? `<div class="field" style="grid-column:span 2"><div class="label">Alamat</div><div class="value">${r.address}</div></div>` : ''}
-${r.description ? `<div class="field" style="grid-column:span 2"><div class="label">Deskripsi</div><div class="value">${r.description}</div></div>` : ''}
-</div>
-<div class="footer"><div>🔧 Servisindo Work Management</div><div>${pd}</div></div>
-</body></html>`;
+                                        const addressRow = r.address ? '<div class="field" style="grid-column:span 2"><div class="label">Alamat</div><div class="value">' + r.address + '</div></div>' : '';
+                                        const descRow = r.description ? '<div class="field" style="grid-column:span 2"><div class="label">Deskripsi</div><div class="value">' + r.description + '</div></div>' : '';
+                                        const salesDiv = r.sales_division ? ' · ' + r.sales_division : '';
+                                        const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder — ' + r.project_name + '</title>'
+                                          + '<style>body{font-family:\'Segoe UI\',Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}'
+                                          + 'h1{font-size:20px;font-weight:800;color:#dc2626;margin-bottom:4px}'
+                                          + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}'
+                                          + '.field{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}'
+                                          + '.label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:3px}'
+                                          + '.value{font-size:13px;font-weight:600;color:#1e293b}'
+                                          + '.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}'
+                                          + '</style></head><body>'
+                                          + '<h1>📅 Reminder Schedule — Servisindo</h1>'
+                                          + '<p style="font-size:12px;color:#64748b">Dicetak: ' + pd + '</p>'
+                                          + '<div class="grid">'
+                                          + '<div class="field"><div class="label">Project</div><div class="value">' + r.project_name + '</div></div>'
+                                          + '<div class="field"><div class="label">Kategori</div><div class="value">' + r.category + '</div></div>'
+                                          + '<div class="field"><div class="label">Handler</div><div class="value">' + (r.assign_name || r.assigned_to) + '</div></div>'
+                                          + '<div class="field"><div class="label">Status</div><div class="value">' + r.status + '</div></div>'
+                                          + '<div class="field"><div class="label">Tanggal</div><div class="value">' + r.due_date + ' ' + (r.due_time || '') + '</div></div>'
+                                          + '<div class="field"><div class="label">Sales</div><div class="value">' + (r.sales_name || '—') + salesDiv + '</div></div>'
+                                          + addressRow + descRow
+                                          + '</div>'
+                                          + '<div class="footer"><div>🔧 Servisindo Work Management</div><div>' + pd + '</div></div>'
+                                          + '</body></html>';
                                         const w = window.open('','_blank');
                                         if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
                                       }} title="Print"
