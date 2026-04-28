@@ -133,15 +133,12 @@ const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string; 
 const CATEGORIES = ['Meeting & Survey', 'Konfigurasi', 'Training', 'Internal', 'Perbaikan Unit Onsite', 'Analisa Onsite'];
 
 const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bg: string; border: string; accent: string }> = {
-  :     { icon: '🖥️', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', border: 'rgba(167,139,250,0.4)', accent: '#7c3aed' },
-  'Meeting & Survey': { icon: '🤝', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)',   border: 'rgba(56,189,248,0.4)',   accent: '#0ea5e9' },
-  'Konfigurasi':      { icon: '⚙️', color: '#34d399', bg: 'rgba(52,211,153,0.15)',   border: 'rgba(52,211,153,0.4)',   accent: '#10b981' },
-  'Konfigurasi & Training':      { icon: '📌', color: '#34d399', bg: 'rgba(52,211,153,0.15)',   border: 'rgba(52,211,153,0.4)',   accent: '#10b981' },
-  'Troubleshooting':  { icon: '🔧', color: '#fb7185', bg: 'rgba(251,113,133,0.15)',   border: 'rgba(251,113,133,0.4)',  accent: '#e11d48' },
-  'Training':         { icon: '🎓', color: '#fbbf24', bg: 'rgba(251,191,36,0.15)',    border: 'rgba(251,191,36,0.4)',   accent: '#d97706' },
-  'Internal':         { icon: '🕵🏻', color: '#11eb2eff', bg: 'rgba(251,191,36,0.15)',    border: 'rgba(251,191,36,0.4)',   accent: '#19d628ff' },
-  'Perbaikan Unit Onsite': { icon: '🔧', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.4)',  accent: '#ea580c' },
-  'Analisa Onsite':        { icon: '🔍', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.4)',  accent: '#7c3aed' },
+  'Meeting & Survey':      { icon: '🤝', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)',   border: 'rgba(56,189,248,0.4)',   accent: '#0ea5e9' },
+  'Konfigurasi':           { icon: '⚙️', color: '#34d399', bg: 'rgba(52,211,153,0.15)',   border: 'rgba(52,211,153,0.4)',   accent: '#10b981' },
+  'Training':              { icon: '🎓', color: '#fbbf24', bg: 'rgba(251,191,36,0.15)',   border: 'rgba(251,191,36,0.4)',   accent: '#d97706' },
+  'Internal':              { icon: '🕵🏻', color: '#34d399', bg: 'rgba(52,211,153,0.15)',  border: 'rgba(52,211,153,0.4)',   accent: '#19d628ff' },
+  'Perbaikan Unit Onsite': { icon: '🔧', color: '#f97316', bg: 'rgba(249,115,22,0.15)',   border: 'rgba(249,115,22,0.4)',   accent: '#ea580c' },
+  'Analisa Onsite':        { icon: '🔍', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)',   border: 'rgba(139,92,246,0.4)',   accent: '#7c3aed' },
 };
 
 const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
