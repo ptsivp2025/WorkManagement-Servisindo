@@ -392,6 +392,9 @@ export default function TicketingServices() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showNewTicket, setShowNewTicket] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Ticket | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
@@ -525,6 +528,30 @@ export default function TicketingServices() {
   }, [isLoggedIn, currentUser, fetchData]);
 
   // ── Login ────────────────────────────────────────────────────────────────
+  // ── Delete ticket (Services DB only — TIDAK menyentuh PTS DB) ───────────
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setShowLoadingPopup(true);
+    setLoadingMsg('Menghapus ticket...');
+    try {
+      // HANYA hapus dari Services DB — PTS DB tidak disentuh sama sekali
+      await supabase.from('activity_logs').delete().eq('ticket_id', deleteTarget.id);
+      await supabase.from('tickets').delete().eq('id', deleteTarget.id);
+      await fetchData(currentUser);
+      setLoadingMsg('✅ Ticket dihapus!');
+      setTimeout(() => {
+        setShowLoadingPopup(false);
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setDeleteConfirmText('');
+        setShowDetail(false);
+      }, 1200);
+    } catch (e: any) {
+      setShowLoadingPopup(false);
+      alert('Error: ' + e.message);
+    }
+  };
+
   const exportToPDF = (ticket: Ticket) => {
     const pd = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
     const svcSt = ticket.services_status||'-';
@@ -1205,6 +1232,39 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
             onClose={() => setShowNewTicket(false)}
             onSaved={() => { setShowNewTicket(false); fetchData(currentUser); }}
           />
+        )}
+
+        {/* Delete Modal */}
+        {showDeleteModal && deleteTarget && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" style={{ border: '2px solid rgba(220,38,38,0.3)' }}>
+              <h3 className="font-bold text-lg text-slate-800 mb-2">🗑️ Hapus Ticket?</h3>
+              <p className="text-sm text-slate-600 mb-1 font-semibold">{deleteTarget.project_name}</p>
+              <p className="text-xs text-red-600 font-medium mb-4 p-2 bg-red-50 rounded-lg">
+                ⚠️ Ticket hanya dihapus dari database Team Services. Data di PTS tidak terpengaruh.
+              </p>
+              <p className="text-sm text-slate-600 mb-2">Ketik <strong className="text-red-600">HAPUS</strong> untuk konfirmasi:</p>
+              <input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-red-500 outline-none mb-4"
+                placeholder="Ketik HAPUS"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setDeleteTarget(null); setDeleteConfirmText(''); }}
+                  className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-semibold hover:bg-slate-50 text-sm">
+                  Batal
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteConfirmText !== 'HAPUS'}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-semibold disabled:opacity-40 text-sm">
+                  🗑️ Hapus
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md" style={{ borderBottom: '2.5px solid #dc2626' }}>
