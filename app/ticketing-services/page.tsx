@@ -114,6 +114,7 @@ interface Ticket {
   current_team?: string;
   date: string;
   created_at: string;
+  activity_logs: string;
   created_by?: string;
   photo_url?: string;
   photo_name?: string;
