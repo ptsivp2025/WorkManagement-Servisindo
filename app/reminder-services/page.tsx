@@ -638,8 +638,8 @@ export default function ReminderSchedulePage() {
   // ─── Resend Form Review ────────────────────────────────────────────────────
   const [resendingFormReview, setResendingFormReview] = useState(false);
 
-  const notify = (type: 'success' | 'error', msg: string) => {
-    setToast({ type, msg });
+  const notify = (type: 'success' | 'error' | 'info', msg: string) => {
+    setToast({ type: type === 'info' ? 'success' : type, msg });
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -2453,7 +2453,7 @@ export default function ReminderSchedulePage() {
                                         const descRow = r.description ? '<div class="field" style="grid-column:span 2"><div class="label">Deskripsi</div><div class="value">' + r.description + '</div></div>' : '';
                                         const salesDiv = r.sales_division ? ' · ' + r.sales_division : '';
                                         const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder — ' + r.project_name + '</title>'
-                                          + '<style>body{font-family:\'Segoe UI\',Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}'
+                                          + '<style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}'
                                           + 'h1{font-size:20px;font-weight:800;color:#dc2626;margin-bottom:4px}'
                                           + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}'
                                           + '.field{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}'
