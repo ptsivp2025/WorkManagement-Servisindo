@@ -727,12 +727,14 @@ export default function ReminderSchedulePage() {
   // Berjalan otomatis setiap hari tanpa perlu buka halaman
 
   const fetchTeamUsers = async () => {
-    // Fetch dari Services DB — hanya user dengan role 'team'
-    const { data } = await supabase
+    // Fetch semua user dari Services DB (role team + admin)
+    // Services DB adalah source of truth untuk anggota Team Services
+    const { data, error } = await supabase
       .from('users')
       .select('id, username, full_name, role, team_type, phone_number, sales_division, allowed_menus')
-      .eq('role', 'team')
+      .in('role', ['team', 'admin'])
       .order('full_name');
+    if (error) console.warn('[fetchTeamUsers]', error.message);
     if (data) setTeamUsers(data as TeamUser[]);
   };
 
