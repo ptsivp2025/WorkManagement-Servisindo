@@ -642,7 +642,7 @@ export default function ReminderSchedulePage() {
     project_name: '', description: '', assigned_to: '', assign_name: '',
     due_date: new Date().toISOString().split('T')[0],
     due_time: '09:00', priority: 'medium', status: 'pending',
-    repeat: 'none', category: ,
+    repeat: 'none', category: 'Meeting & Survey',
     sales_name: '', sales_division: '', address: '', pic_name: '', pic_phone: '',
     notes: '', product: '',
   };
