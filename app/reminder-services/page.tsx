@@ -4,12 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
-// Services DB (own)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-// PTS DB — untuk fetch guest/sales list
+// PTS DB — untuk fetch guest/sales
 const supabasePTS = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PTS_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_PTS_ANON_KEY!
@@ -638,8 +637,8 @@ export default function ReminderSchedulePage() {
   // ─── Resend Form Review ────────────────────────────────────────────────────
   const [resendingFormReview, setResendingFormReview] = useState(false);
 
-  const notify = (type: 'success' | 'error' | 'info', msg: string) => {
-    setToast({ type: type === 'info' ? 'success' : type, msg });
+  const notify = (type: 'success' | 'error', msg: string) => {
+    setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -715,7 +714,7 @@ export default function ReminderSchedulePage() {
         localStorage.removeItem('svc_currentUser');
         localStorage.removeItem('svc_loginTime');
         const target = window.top !== window ? window.top : window;
-        if (target) target.location.href = '/dashboard';
+        if (target) target.location.href = '/';
       }
     };
     checkSession(); // cek langsung saat mount
@@ -733,16 +732,15 @@ export default function ReminderSchedulePage() {
   };
 
   const fetchGuestUsers = async () => {
-    // Gabungkan guest dari Services DB (local) + PTS DB (cross-reference)
-    const [{ data: svcGuests }, { data: ptsGuests }] = await Promise.all([
+    // Gabungkan guest dari Services DB + PTS DB
+    const [{ data: svcData }, { data: ptsData }] = await Promise.all([
       supabase.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name'),
       supabasePTS.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name'),
     ]);
-    // Merge, deduplicate by username
-    const combined: GuestUser[] = [...(svcGuests ?? []) as GuestUser[]];
-    const svcUsernames = new Set((svcGuests ?? []).map((u: any) => u.username));
-    for (const g of (ptsGuests ?? []) as GuestUser[]) {
-      if (!svcUsernames.has(g.username)) combined.push(g);
+    const combined: GuestUser[] = [...((svcData ?? []) as GuestUser[])];
+    const svcNames = new Set((svcData ?? []).map((u: any) => u.username));
+    for (const g of (ptsData ?? []) as GuestUser[]) {
+      if (!svcNames.has(g.username)) combined.push(g);
     }
     combined.sort((a, b) => a.full_name.localeCompare(b.full_name));
     setGuestUsers(combined);
@@ -812,7 +810,10 @@ export default function ReminderSchedulePage() {
       notify('error', 'Pilih Sales wajib diisi!');
       return;
     }
-    // (form review tidak berlaku di platform Services)
+    if (isTriggerCat && !formData.sales_name?.trim()) {
+      notify('error', `Kategori "${formData.category}" memerlukan pilihan Guest / Sales untuk form review!`);
+      return;
+    }
 
     const assignee = teamUsers.find(u => u.username === formData.assigned_to);
     const payload = { ...formData, assign_name: assignee?.full_name ?? formData.assigned_to, created_by: currentUser?.username ?? 'system' };
@@ -878,11 +879,21 @@ export default function ReminderSchedulePage() {
     fetchRemindersQuiet();
   };
 
+
   const printReminder = (r: Reminder) => {
     const pd = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     const addrRow = r.address ? '<div class="gf" style="grid-column:span 2"><div class="gl">Alamat</div><div class="gv">' + r.address + '</div></div>' : '';
     const descRow = r.description ? '<div class="gf" style="grid-column:span 2"><div class="gl">Deskripsi</div><div class="gv">' + r.description + '</div></div>' : '';
     const sdiv = r.sales_division ? ' · ' + r.sales_division : '';
+    const rows = [
+      '<div class="gf"><div class="gl">Project</div><div class="gv">' + r.project_name + '</div></div>',
+      '<div class="gf"><div class="gl">Kategori</div><div class="gv">' + r.category + '</div></div>',
+      '<div class="gf"><div class="gl">Handler</div><div class="gv">' + (r.assign_name || r.assigned_to) + '</div></div>',
+      '<div class="gf"><div class="gl">Status</div><div class="gv">' + r.status + '</div></div>',
+      '<div class="gf"><div class="gl">Tanggal</div><div class="gv">' + r.due_date + ' ' + (r.due_time || '') + '</div></div>',
+      '<div class="gf"><div class="gl">Sales</div><div class="gv">' + (r.sales_name || '-') + sdiv + '</div></div>',
+      addrRow, descRow,
+    ].join('');
     const html = [
       '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder</title>',
       '<style>body{font-family:Arial,sans-serif;padding:28px;color:#1e293b;max-width:700px;margin:0 auto}',
@@ -895,15 +906,7 @@ export default function ReminderSchedulePage() {
       '</style></head><body>',
       '<h1>Reminder Schedule — Servisindo</h1>',
       '<p style="font-size:11px;color:#64748b">Dicetak: ' + pd + '</p>',
-      '<div class="g">',
-      '<div class="gf"><div class="gl">Project</div><div class="gv">' + r.project_name + '</div></div>',
-      '<div class="gf"><div class="gl">Kategori</div><div class="gv">' + r.category + '</div></div>',
-      '<div class="gf"><div class="gl">Handler</div><div class="gv">' + (r.assign_name || r.assigned_to) + '</div></div>',
-      '<div class="gf"><div class="gl">Status</div><div class="gv">' + r.status + '</div></div>',
-      '<div class="gf"><div class="gl">Tanggal</div><div class="gv">' + r.due_date + ' ' + (r.due_time || '') + '</div></div>',
-      '<div class="gf"><div class="gl">Sales</div><div class="gv">' + (r.sales_name || '-') + sdiv + '</div></div>',
-      addrRow, descRow,
-      '</div>',
+      '<div class="g">' + rows + '</div>',
       '<div class="ft"><div>Servisindo Work Management</div><div>' + pd + '</div></div>',
       '</body></html>',
     ].join('');
@@ -945,8 +948,11 @@ export default function ReminderSchedulePage() {
 
           // Form review tidak digunakan di platform Services
         }
-      } catch (e) { console.warn('[WA done]', e); }
+      } catch (waEx) { console.warn('[status done] WA failed:', waEx); }
     }
+    // ─────────────────────────────────────────────────────────────────────
+    fetchRemindersQuiet();
+    if (detailReminder?.id === id) setDetailReminder(prev => prev ? { ...prev, status } : null);
   };
 
   const handleConfirmStatusUpdate = async () => {
@@ -978,10 +984,9 @@ export default function ReminderSchedulePage() {
     setUpdatingStatus(false);
   };
 
-  // ─── Resend / Manual Send Form Review ke Guest ────────────────────────────
-  // Form review tidak tersedia di platform Services — fungsi ini disabled
+  // Form review tidak tersedia di platform Services
   const handleResendFormReview = async (_r: Reminder) => {
-    notify('info', 'Form review tidak digunakan di platform Work Management Services.');
+    notify('success', 'Form review tidak tersedia di platform Work Management Services.');
   };
 
   const openEdit = (r: Reminder) => {
@@ -1129,18 +1134,7 @@ export default function ReminderSchedulePage() {
     if (selectedCalDay && r.due_date !== selectedCalDay) return false;
     return true;
   }).sort((a, b) => {
-    // Items yang baru di-reschedule (updated_at lebih baru dari created_at) naik ke atas
-    const aRescheduled = a.notes?.includes('[Re-Schedule') ?? false;
-    const bRescheduled = b.notes?.includes('[Re-Schedule') ?? false;
-    if (aRescheduled && !bRescheduled) return -1;
-    if (!aRescheduled && bRescheduled) return 1;
-    if (aRescheduled && bRescheduled) {
-      // Keduanya rescheduled, sort by updated_at desc (yang terbaru direschedule di atas)
-      const aTime = a.updated_at || a.created_at || '';
-      const bTime = b.updated_at || b.created_at || '';
-      return bTime.localeCompare(aTime);
-    }
-    // Non-rescheduled: sort by created_at desc (default)
+    // Sort by created_at desc (yang paling baru dibuat di atas)
     return (b.created_at || '').localeCompare(a.created_at || '');
   });
 
@@ -1198,7 +1192,7 @@ export default function ReminderSchedulePage() {
     setCurrentUser(null); setIsLoggedIn(false); setLoginTime(null);
     // Redirect ke halaman login dashboard (parent window jika di dalam iframe)
     const target = window.top !== window ? window.top : window;
-    if (target) target.location.href = '/dashboard';
+    if (target) target.location.href = '/';
   };
 
   const handleLogin = async () => {
@@ -1237,9 +1231,7 @@ export default function ReminderSchedulePage() {
           </div>
         )}
         <div className="relative z-10 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-md" style={{ border: '2px solid rgba(220,38,38,0.3)' }}>
-          <div className="flex justify-center mb-5">
-            <img src="/logo-servisindo.png" alt="Servisindo" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} />
-          </div>
+          <div className="flex justify-center mb-5"><img src="/logo-servisindo.png" alt="Servisindo" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} /></div>
           <h1 className="text-3xl font-black text-center mb-1 text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-800">Login</h1>
           <p className="text-center text-gray-600 font-semibold mb-6 text-sm">Reminder Schedule<br/><span className="text-red-600 font-bold">PTS IVP — Team Work Planner</span></p>
           <div className="space-y-4">
@@ -1486,7 +1478,7 @@ export default function ReminderSchedulePage() {
 
                 {/* ── Pilih Sales — selalu tampil untuk semua kategori ── */}
                 {(() => {
-                  const isTrigger = false; // tidak ada form review di Services
+                  const isTrigger = false; // tidak ada form review
                   return (
                     <div className="rounded-xl p-4 space-y-3"
                       style={isTrigger
@@ -2455,7 +2447,10 @@ export default function ReminderSchedulePage() {
                                 {/* Tanggal */}
                                 <td className="px-2 py-1 border-r border-gray-200 align-middle">
                                   <div className="inline-flex flex-col items-center px-2 py-1 rounded-lg text-center"
-                                    style={{ background: today ? 'rgba(220,38,38,0.12)' : 'rgba(99,102,241,0.08)', border: today ? '1px solid rgba(220,38,38,0.35)' : '1px solid rgba(99,102,241,0.2)' }}>
+                                    style={{
+                                      background: today ? 'rgba(220,38,38,0.12)' : 'rgba(99,102,241,0.08)',
+                                      border: today ? '1px solid rgba(220,38,38,0.35)' : '1px solid rgba(99,102,241,0.2)',
+                                    }}>
                                     <span className="text-base font-black leading-none" style={{ color: today ? '#dc2626' : '#4f46e5' }}>
                                       {new Date(r.due_date + 'T00:00:00').getDate()}
                                     </span>
@@ -2468,7 +2463,7 @@ export default function ReminderSchedulePage() {
                                 {/* ACT */}
                                 <td className="px-3 py-1 align-middle text-center" onClick={e => e.stopPropagation()}>
                                   <div className="flex flex-nowrap items-center justify-center gap-1">
-                                    {/* Detail — Eye icon */}
+                                    {/* Eye icon */}
                                     <button onClick={() => setDetailReminder(r)} title="Lihat Detail"
                                       className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
                                       style={{ color: '#94a3b8' }}
@@ -2479,7 +2474,7 @@ export default function ReminderSchedulePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                       </svg>
                                     </button>
-                                    {/* Print — Printer icon */}
+                                    {/* Print icon */}
                                     {(isAdmin || currentUser?.role === 'team') && (
                                       <button onClick={() => printReminder(r)} title="Print"
                                         className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
@@ -2491,7 +2486,7 @@ export default function ReminderSchedulePage() {
                                         </svg>
                                       </button>
                                     )}
-                                    {/* Hapus — Trash icon, admin only */}
+                                    {/* Trash icon - admin only */}
                                     {isAdmin && (
                                       <button onClick={() => openDeleteModal(r)} title="Hapus"
                                         className="p-1.5 rounded-lg transition-all hover:bg-red-50"
