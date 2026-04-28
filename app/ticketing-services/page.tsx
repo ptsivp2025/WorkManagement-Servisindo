@@ -404,6 +404,7 @@ export default function TicketingServices() {
     notes: '',
     new_status: 'Verifying Warranty' as ServicesStatus,
     file: null as File | null,
+    photo: null as File | null,
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -695,7 +696,6 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
       const ext = newActivity.file.name.split('.').pop();
       const path = `svc-activity/${selectedTicket.id}-${Date.now()}.${ext}`;
       try {
-        // Upload ke Services DB storage
         const { error: upErr } = await supabase.storage.from('ticket-files').upload(path, newActivity.file);
         if (!upErr) {
           const { data: urlData } = supabase.storage.from('ticket-files').getPublicUrl(path);
@@ -703,6 +703,22 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
           fileName = newActivity.file.name;
         }
       } catch { /* fallback: no file url */ }
+    }
+
+    let photoUrl = '';
+    let photoName = '';
+    if (newActivity.photo) {
+      setLoadingMsg('Upload foto...');
+      const ext = newActivity.photo.name.split('.').pop();
+      const path = `svc-photos/${selectedTicket.id}-${Date.now()}.${ext}`;
+      try {
+        const { error: upErr } = await supabase.storage.from('ticket-files').upload(path, newActivity.photo);
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from('ticket-files').getPublicUrl(path);
+          photoUrl = urlData.publicUrl ?? '';
+          photoName = newActivity.photo.name;
+        }
+      } catch { /* fallback: no photo url */ }
     }
 
     const logBase = {
@@ -714,6 +730,8 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
       team_type:        'Team Services',
       file_url:         fileUrl,
       file_name:        fileName,
+      photo_url:        photoUrl,
+      photo_name:       photoName,
       assigned_to_services: false,
       created_at:       new Date().toISOString(),
     };
@@ -854,7 +872,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
       await fetchData(currentUser);
       await fetchLogs(selectedTicket.id);
 
-      setNewActivity({ action_taken: '', notes: '', new_status: 'Verifying Warranty', file: null });
+      setNewActivity({ action_taken: '', notes: '', new_status: 'Verifying Warranty', file: null, photo: null });
       setShowRepairSchedule(false);
       setRepairSchedule({ due_date: new Date(Date.now() + 7 * 24 * 3600000).toISOString().split('T')[0], due_time: '09:00', notes: '' });
       setShowUpdateForm(false);
