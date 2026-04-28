@@ -113,8 +113,8 @@ interface GuestUser {
   sales_division?: string;
 }
 
-// Kategori yang men-trigger auto form_review ke Guest
-const REVIEW_TRIGGER_CATEGORIES = ['Demo Product', 'Konfigurasi & Training', 'Training'] as const;
+// Tidak ada form review di platform Services
+const REVIEW_TRIGGER_CATEGORIES: string[] = [];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string; border: string; dot: string }> = {
@@ -130,16 +130,18 @@ const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string; 
   cancelled:   { label: 'Cancelled', color: '#374151', bg: '#f3f4f6', border: '#6b7280', icon: '❌' },
 };
 
-const CATEGORIES = ['Demo Product', 'Meeting & Survey', 'Konfigurasi', 'Konfigurasi & Training', 'Troubleshooting', 'Training', 'Internal'];
+const CATEGORIES = ['Meeting & Survey', 'Konfigurasi', 'Training', 'Internal', 'Perbaikan Unit Onsite', 'Analisa Onsite'];
 
 const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bg: string; border: string; accent: string }> = {
-  'Demo Product':     { icon: '🖥️', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', border: 'rgba(167,139,250,0.4)', accent: '#7c3aed' },
+  :     { icon: '🖥️', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)', border: 'rgba(167,139,250,0.4)', accent: '#7c3aed' },
   'Meeting & Survey': { icon: '🤝', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)',   border: 'rgba(56,189,248,0.4)',   accent: '#0ea5e9' },
   'Konfigurasi':      { icon: '⚙️', color: '#34d399', bg: 'rgba(52,211,153,0.15)',   border: 'rgba(52,211,153,0.4)',   accent: '#10b981' },
   'Konfigurasi & Training':      { icon: '📌', color: '#34d399', bg: 'rgba(52,211,153,0.15)',   border: 'rgba(52,211,153,0.4)',   accent: '#10b981' },
   'Troubleshooting':  { icon: '🔧', color: '#fb7185', bg: 'rgba(251,113,133,0.15)',   border: 'rgba(251,113,133,0.4)',  accent: '#e11d48' },
   'Training':         { icon: '🎓', color: '#fbbf24', bg: 'rgba(251,191,36,0.15)',    border: 'rgba(251,191,36,0.4)',   accent: '#d97706' },
   'Internal':         { icon: '🕵🏻', color: '#11eb2eff', bg: 'rgba(251,191,36,0.15)',    border: 'rgba(251,191,36,0.4)',   accent: '#19d628ff' },
+  'Perbaikan Unit Onsite': { icon: '🔧', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.4)',  accent: '#ea580c' },
+  'Analisa Onsite':        { icon: '🔍', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.4)',  accent: '#7c3aed' },
 };
 
 const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
@@ -643,7 +645,7 @@ export default function ReminderSchedulePage() {
     project_name: '', description: '', assigned_to: '', assign_name: '',
     due_date: new Date().toISOString().split('T')[0],
     due_time: '09:00', priority: 'medium', status: 'pending',
-    repeat: 'none', category: 'Demo Product',
+    repeat: 'none', category: ,
     sales_name: '', sales_division: '', address: '', pic_name: '', pic_phone: '',
     notes: '', product: '',
   };
@@ -725,16 +727,23 @@ export default function ReminderSchedulePage() {
 
   const fetchTeamUsers = async () => {
     const { data } = await supabase.from('users').select('id, username, full_name, role, team_type, phone_number, sales_division, allowed_menus').order('full_name');
-    if (data) setTeamUsers(data.filter((u: TeamUser) => u.team_type === 'Team PTS'));
+    if (data) setTeamUsers(data.filter((u: TeamUser) => u.team_type === 'Team Services' || u.role === 'admin'));
   };
 
   const fetchGuestUsers = async () => {
-    const { data } = await supabase
-      .from('users')
-      .select('id, username, full_name, role, phone_number, sales_division')
-      .eq('role', 'guest')
-      .order('full_name');
-    if (data) setGuestUsers(data as GuestUser[]);
+    // Gabungkan guest dari Services DB (local) + PTS DB (cross-reference)
+    const [{ data: svcGuests }, { data: ptsGuests }] = await Promise.all([
+      supabase.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name'),
+      supabasePTS ? supabasePTS.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name') : { data: [] },
+    ]);
+    // Merge, deduplicate by username
+    const combined: GuestUser[] = [...(svcGuests ?? []) as GuestUser[]];
+    const svcUsernames = new Set((svcGuests ?? []).map((u: any) => u.username));
+    for (const g of (ptsGuests ?? []) as GuestUser[]) {
+      if (!svcUsernames.has(g.username)) combined.push(g);
+    }
+    combined.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    setGuestUsers(combined);
   };
 
   // 🔥 PERUBAHAN UTAMA: Urutkan berdasarkan created_at terbaru di paling atas
@@ -796,15 +805,12 @@ export default function ReminderSchedulePage() {
     if (!formData.due_date)                { notify('error', 'Tanggal wajib diisi!');          return; }
     if (!formData.address.trim()) { notify('error', 'Lokasi Project wajib diisi!');  return; }
 
-    const isTriggerCat = (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(formData.category);
+    const isTriggerCat = false; // Tidak ada form review di Services
     if (!formData.sales_name?.trim()) {
       notify('error', 'Pilih Sales wajib diisi!');
       return;
     }
-    if (isTriggerCat && !formData.sales_name?.trim()) {
-      notify('error', `Kategori "${formData.category}" memerlukan pilihan Guest / Sales untuk form review!`);
-      return;
-    }
+    // (form review tidak berlaku di platform Services)
 
     const assignee = teamUsers.find(u => u.username === formData.assigned_to);
     const payload = { ...formData, assign_name: assignee?.full_name ?? formData.assigned_to, created_by: currentUser?.username ?? 'system' };
@@ -902,94 +908,7 @@ export default function ReminderSchedulePage() {
             await sendFonnteWA(handlerUser.phone_number, msg);
           }
 
-          // ── Auto-insert ke form_reviews jika kategori trigger & ada sales_name ──
-          const isTriggerCategory = (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(reminder.category);
-          const salesName = reminder.sales_name?.trim();
-          if (isTriggerCategory && salesName) {
-            try {
-              // Selalu fetch guest dari DB (tidak andalkan state guestUsers yang bisa saja belum terisi)
-              const { data: guestFromDb } = await supabase
-                .from('users')
-                .select('id, username, full_name, role, phone_number, sales_division')
-                .eq('role', 'guest')
-                .eq('full_name', salesName)
-                .maybeSingle();
-
-              // Fallback ke guestUsers state jika DB tidak return
-              const resolvedGuest = guestFromDb ?? guestUsers.find(g => g.full_name === salesName) ?? null;
-
-              console.log('[Auto form_review] Resolved guest:', resolvedGuest?.username, '| salesName:', salesName);
-
-              // Cek apakah sudah ada form_review untuk reminder ini
-              const { data: existingReview } = await supabase
-                .from('form_reviews')
-                .select('id')
-                .eq('reminder_id', reminder.id)
-                .eq('sales_name', salesName)
-                .maybeSingle();
-
-              if (!existingReview) {
-                const reviewCategory = reminder.category === 'Demo Product' ? 'Demo Product' : 'BAST';
-                const productValue = reminder.product?.trim() || '';
-                const { error: reviewErr } = await supabase.from('form_reviews').insert([{
-                  reminder_id: reminder.id,
-                  project_name: reminder.project_name,
-                  address: reminder.address || '',
-                  sales_name: salesName,
-                  sales_division: reminder.sales_division || '',
-                  assign_name: reminder.assign_name,
-                  assigned_to: reminder.assigned_to,
-                  reminder_category: reminder.category,
-                  review_category: reviewCategory,
-                  // Auto-insert product ke kolom yang sesuai berdasarkan review_category
-                  ...(reviewCategory === 'Demo Product'
-                    ? { product_demo: productValue }
-                    : { product_bast: productValue }),
-                  // guest_fullname = full_name Guest (= sales_name), wajib NOT NULL
-                  guest_fullname: resolvedGuest?.full_name ?? salesName,
-                  // guest_username untuk filter di Form Review page
-                  guest_username: resolvedGuest?.username ?? '',
-                }]);
-
-                if (reviewErr) {
-                  console.error('[Auto form_review] Gagal insert:', reviewErr.message);
-                } else {
-                  console.log('[Auto form_review] ✅ Form review dibuat untuk sales:', salesName, '| guest_username:', resolvedGuest?.username ?? 'TIDAK DITEMUKAN');
-                  notify('success', `Form review otomatis dibuat untuk ${salesName}!`);
-
-                  // Kirim WA notifikasi ke guest
-                  if (resolvedGuest?.phone_number) {
-                    const guestMsg =
-                      `⭐ *REVIEW DIMINTA — PTS IVP*\n\n` +
-                      `Halo *${resolvedGuest.full_name}*!\n\n` +
-                      `Jadwal *${reminder.category}* untuk project:\n` +
-                      `*Kategori: ${reminder.category}*\n` +
-                      `📦 *Product: ${reminder.product ?? '-'}*\n` +
-                      `📋 *${reminder.project_name}*\n` +
-                      `📍 ${reminder.address || '-'}\n\n` +
-                      `telah selesai dilaksanakan oleh tim kami.\n\n` +
-                      `Mohon berikan penilaian / review Anda melalui dashboard:\n` +
-                      `🔗 https://team-ticketing.vercel.app/dashboard\n\n` +
-                      `Terima kasih! 🙏`;
-                    await sendFonnteWA(resolvedGuest.phone_number, guestMsg);
-                  } else {
-                    console.warn('[Auto form_review] Guest tidak punya nomor WA atau tidak ditemukan:', salesName);
-                  }
-                }
-              } else {
-                console.log('[Auto form_review] Form review sudah ada untuk reminder:', reminder.id);
-              }
-            } catch (reviewEx) {
-              console.warn('[Auto form_review] Exception:', reviewEx);
-            }
-          }
-        }
-      } catch (waEx) { console.warn('[status done] WA failed:', waEx); }
-    }
-    // ─────────────────────────────────────────────────────────────────────
-    fetchRemindersQuiet();
-    if (detailReminder?.id === id) setDetailReminder(prev => prev ? { ...prev, status } : null);
-  };
+          // Form review tidak digunakan di platform Services
 
   const handleConfirmStatusUpdate = async () => {
     if (!detailReminder || !pendingStatus) return;
@@ -1026,9 +945,9 @@ export default function ReminderSchedulePage() {
       notify('error', 'Reminder ini tidak memiliki Sales yang terpilih!');
       return;
     }
-    const isTrigger = (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(r.category);
+    const isTrigger = false; // Tidak ada form review di Services
     if (!isTrigger) {
-      notify('error', `Kategori "${r.category}" tidak memerlukan form review.`);
+      notify('error', 'Form review tidak tersedia di platform Services.');
       return;
     }
     if (r.status !== 'done') {
@@ -1058,7 +977,7 @@ export default function ReminderSchedulePage() {
 
       // Cek apakah form_review sudah ada
       const { data: existingReview } = await supabase
-        .from('form_reviews')
+        .from('activity_logs') // was form_reviews — disabled in Services
         .select('id, guest_username')
         .eq('reminder_id', r.id)
         .eq('sales_name', salesName)
@@ -1067,7 +986,7 @@ export default function ReminderSchedulePage() {
       if (existingReview) {
         // Patch guest_username jika masih kosong (data lama)
         if (!existingReview.guest_username && resolvedGuest.username) {
-          await supabase.from('form_reviews')
+          await supabase.from('activity_logs') // was form_reviews — disabled in Services
             .update({ guest_username: resolvedGuest.username })
             .eq('id', existingReview.id);
           console.log('[Resend] Patch guest_username:', resolvedGuest.username);
@@ -1075,9 +994,9 @@ export default function ReminderSchedulePage() {
         // Form sudah ada — hanya kirim ulang WA
       } else {
         // Buat form_review baru
-        const reviewCategory = r.category === 'Demo Product' ? 'Demo Product' : 'BAST';
+        const reviewCategory = r.category ===  ?  : 'BAST';
         const productValue = r.product?.trim() || '';
-        const { error: reviewErr } = await supabase.from('form_reviews').insert([{
+        const { error: reviewErr } = await supabase.from('activity_logs') // was form_reviews — disabled in Services.insert([{
           reminder_id: r.id,
           project_name: r.project_name,
           address: r.address || '',
@@ -1088,7 +1007,7 @@ export default function ReminderSchedulePage() {
           reminder_category: r.category,
           review_category: reviewCategory,
           // Auto-insert product ke kolom yang sesuai berdasarkan review_category
-          ...(reviewCategory === 'Demo Product'
+          ...(reviewCategory === 
             ? { product_demo: productValue }
             : { product_bast: productValue }),
           // guest_fullname = full_name Guest (= sales_name), wajib NOT NULL
@@ -1584,7 +1503,7 @@ export default function ReminderSchedulePage() {
                   <FormField label="Assign To *">
                     <select value={formData.assigned_to} onChange={e => fd({ assigned_to: e.target.value })}
                       className={inputCls} style={inputStyle}>
-                      <option value="">-- Pilih Team PTS --</option>
+                      <option value="">-- Pilih Team Services --</option>
                       {teamUsers.map(u => <option key={u.id} value={u.username}>{u.full_name}</option>)}
                     </select>
                   </FormField>
@@ -1634,7 +1553,7 @@ export default function ReminderSchedulePage() {
 
                 {/* ── Pilih Sales — selalu tampil untuk semua kategori ── */}
                 {(() => {
-                  const isTrigger = (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(formData.category);
+                  const isTrigger = false; // tidak ada form review di Services
                   return (
                     <div className="rounded-xl p-4 space-y-3"
                       style={isTrigger
@@ -2619,23 +2538,66 @@ export default function ReminderSchedulePage() {
                                 {/* ACT */}
                                 <td className="px-3 py-1 align-middle text-center" onClick={e => e.stopPropagation()}>
                                   <div className="flex flex-nowrap items-center justify-center gap-1">
-                                    {/* Detail */}
-                                    <button onClick={() => setDetailReminder(r)} title="Detail"
-                                      className="text-blue-500 hover:text-blue-700 transition-colors">
-                                      <span className="text-sm">👁</span>
+                                    {/* Detail — Eye icon */}
+                                    <button onClick={() => setDetailReminder(r)} title="Lihat Detail"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
+                                      style={{ color: '#94a3b8' }}
+                                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#3b82f6'}
+                                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}>
+                                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                      </svg>
                                     </button>
-                                    {/* Re-Schedule — semua team PTS & admin bisa lihat */}
-                                    {(isAdmin || currentUser?.role === 'team') && r.status !== 'done' && (
-                                      <button onClick={() => setRescheduleTarget(r)} title="Re-Schedule"
-                                        className="text-amber-500 hover:text-amber-700 transition-colors">
-                                        <span className="text-sm">📅</span>
-                                      </button>
+                                    {/* Print — Printer icon */}
+                                    {(isAdmin || currentUser?.role === 'team') && (
+                                      <button onClick={() => {
+                                        const pd = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+                                        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder — ${r.project_name}</title>
+<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}
+h1{font-size:20px;font-weight:800;color:#dc2626;margin-bottom:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.field{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}
+.label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:3px}
+.value{font-size:13px;font-weight:600;color:#1e293b}
+.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+</style></head><body>
+<h1>📅 Reminder Schedule — Servisindo</h1>
+<p style="font-size:12px;color:#64748b">Dicetak: ${pd}</p>
+<div class="grid">
+<div class="field"><div class="label">Project</div><div class="value">${r.project_name}</div></div>
+<div class="field"><div class="label">Kategori</div><div class="value">${r.category}</div></div>
+<div class="field"><div class="label">Handler</div><div class="value">${r.assign_name || r.assigned_to}</div></div>
+<div class="field"><div class="label">Status</div><div class="value">${r.status}</div></div>
+<div class="field"><div class="label">Tanggal</div><div class="value">${r.due_date} ${r.due_time || ''}</div></div>
+<div class="field"><div class="label">Sales</div><div class="value">${r.sales_name || '—'}${r.sales_division ? ' · '+r.sales_division : ''}</div></div>
+${r.address ? `<div class="field" style="grid-column:span 2"><div class="label">Alamat</div><div class="value">${r.address}</div></div>` : ''}
+${r.description ? `<div class="field" style="grid-column:span 2"><div class="label">Deskripsi</div><div class="value">${r.description}</div></div>` : ''}
+</div>
+<div class="footer"><div>🔧 Servisindo Work Management</div><div>${pd}</div></div>
+</body></html>`;
+                                        const w = window.open('','_blank');
+                                        if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
+                                      }} title="Print"
+                                      className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
+                                      style={{ color: '#94a3b8' }}
+                                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
+                                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}>
+                                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                      </svg>
+                                    </button>
                                     )}
-                                    {/* Hapus — admin only */}
+                                    {/* Hapus — Trash icon, admin only */}
                                     {isAdmin && (
                                       <button onClick={() => openDeleteModal(r)} title="Hapus"
-                                        className="text-red-400 hover:text-red-600 transition-colors">
-                                        <span className="text-sm">🗑️</span>
+                                        className="p-1.5 rounded-lg transition-all hover:bg-red-50"
+                                        style={{ color: '#94a3b8' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}>
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
                                       </button>
                                     )}
                                   </div>
