@@ -87,17 +87,6 @@ const STATUS_GRADIENTS: Record<string, { gradient: string; shadow: string }> = {
   'Repaired Unit':      { gradient: 'linear-gradient(135deg,#0d9488,#0f766e)', shadow: 'rgba(13,148,136,0.3)' },
   'Solved':             { gradient: 'linear-gradient(135deg,#059669,#047857)', shadow: 'rgba(5,150,105,0.3)' },
 };
-  'Waiting Approval':   { gradient: 'linear-gradient(135deg,#ea580c,#c2410c)', shadow: 'rgba(234,88,12,0.3)' },
-  'Verifying Warranty': { gradient: 'linear-gradient(135deg,#0284c7,#0369a1)', shadow: 'rgba(2,132,199,0.3)' },
-  'Analyzing':          { gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)', shadow: 'rgba(124,58,237,0.3)' },
-  'Void':               { gradient: 'linear-gradient(135deg,#64748b,#475569)', shadow: 'rgba(100,116,139,0.3)' },
-  'RMA Submitted':      { gradient: 'linear-gradient(135deg,#d97706,#b45309)', shadow: 'rgba(217,119,6,0.3)' },
-  'Waiting Part':       { gradient: 'linear-gradient(135deg,#e11d48,#9f1239)', shadow: 'rgba(225,29,72,0.3)' },
-  'In Repair':          { gradient: 'linear-gradient(135deg,#2563eb,#1d4ed8)', shadow: 'rgba(37,99,235,0.3)' },
-  'Backup Deployed':    { gradient: 'linear-gradient(135deg,#4f46e5,#4338ca)', shadow: 'rgba(79,70,229,0.3)' },
-  'Repaired Unit':      { gradient: 'linear-gradient(135deg,#0d9488,#0f766e)', shadow: 'rgba(13,148,136,0.3)' },
-  'Solved':             { gradient: 'linear-gradient(135deg,#059669,#047857)', shadow: 'rgba(5,150,105,0.3)' },
-};
 
 interface User {
   id: string;
