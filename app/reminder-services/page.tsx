@@ -878,6 +878,39 @@ export default function ReminderSchedulePage() {
     fetchRemindersQuiet();
   };
 
+  const printReminder = (r: Reminder) => {
+    const pd = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const addrRow = r.address ? '<div class="gf" style="grid-column:span 2"><div class="gl">Alamat</div><div class="gv">' + r.address + '</div></div>' : '';
+    const descRow = r.description ? '<div class="gf" style="grid-column:span 2"><div class="gl">Deskripsi</div><div class="gv">' + r.description + '</div></div>' : '';
+    const sdiv = r.sales_division ? ' · ' + r.sales_division : '';
+    const html = [
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder</title>',
+      '<style>body{font-family:Arial,sans-serif;padding:28px;color:#1e293b;max-width:700px;margin:0 auto}',
+      'h1{font-size:18px;font-weight:800;color:#dc2626;margin-bottom:4px}',
+      '.g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}',
+      '.gf{border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px}',
+      '.gl{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px}',
+      '.gv{font-size:12px;font-weight:600;color:#1e293b}',
+      '.ft{margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}',
+      '</style></head><body>',
+      '<h1>Reminder Schedule — Servisindo</h1>',
+      '<p style="font-size:11px;color:#64748b">Dicetak: ' + pd + '</p>',
+      '<div class="g">',
+      '<div class="gf"><div class="gl">Project</div><div class="gv">' + r.project_name + '</div></div>',
+      '<div class="gf"><div class="gl">Kategori</div><div class="gv">' + r.category + '</div></div>',
+      '<div class="gf"><div class="gl">Handler</div><div class="gv">' + (r.assign_name || r.assigned_to) + '</div></div>',
+      '<div class="gf"><div class="gl">Status</div><div class="gv">' + r.status + '</div></div>',
+      '<div class="gf"><div class="gl">Tanggal</div><div class="gv">' + r.due_date + ' ' + (r.due_time || '') + '</div></div>',
+      '<div class="gf"><div class="gl">Sales</div><div class="gv">' + (r.sales_name || '-') + sdiv + '</div></div>',
+      addrRow, descRow,
+      '</div>',
+      '<div class="ft"><div>Servisindo Work Management</div><div>' + pd + '</div></div>',
+      '</body></html>',
+    ].join('');
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
+  };
+
   const openDeleteModal = (r: Reminder) => {
     setDeleteTarget(r);
     setDeleteConfirmText('');
@@ -911,6 +944,10 @@ export default function ReminderSchedulePage() {
           }
 
           // Form review tidak digunakan di platform Services
+        }
+      } catch (e) { console.warn('[WA done]', e); }
+    }
+  };
 
   const handleConfirmStatusUpdate = async () => {
     if (!detailReminder || !pendingStatus) return;
@@ -2418,10 +2455,7 @@ export default function ReminderSchedulePage() {
                                 {/* Tanggal */}
                                 <td className="px-2 py-1 border-r border-gray-200 align-middle">
                                   <div className="inline-flex flex-col items-center px-2 py-1 rounded-lg text-center"
-                                    style={{
-                                      background: today ? 'rgba(220,38,38,0.12)' : 'rgba(99,102,241,0.08)',
-                                      border: today ? '1px solid rgba(220,38,38,0.35)' : '1px solid rgba(99,102,241,0.2)',
-                                    }}>
+                                    style={{ background: today ? 'rgba(220,38,38,0.12)' : 'rgba(99,102,241,0.08)', border: today ? '1px solid rgba(220,38,38,0.35)' : '1px solid rgba(99,102,241,0.2)' }}>
                                     <span className="text-base font-black leading-none" style={{ color: today ? '#dc2626' : '#4f46e5' }}>
                                       {new Date(r.due_date + 'T00:00:00').getDate()}
                                     </span>
@@ -2447,44 +2481,15 @@ export default function ReminderSchedulePage() {
                                     </button>
                                     {/* Print — Printer icon */}
                                     {(isAdmin || currentUser?.role === 'team') && (
-                                      <button onClick={() => {
-                                        const pd = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-                                        const addressRow = r.address ? '<div class="field" style="grid-column:span 2"><div class="label">Alamat</div><div class="value">' + r.address + '</div></div>' : '';
-                                        const descRow = r.description ? '<div class="field" style="grid-column:span 2"><div class="label">Deskripsi</div><div class="value">' + r.description + '</div></div>' : '';
-                                        const salesDiv = r.sales_division ? ' · ' + r.sales_division : '';
-                                        const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reminder — ' + r.project_name + '</title>'
-                                          + '<style>body{font-family:Arial,sans-serif;padding:32px;color:#1e293b;max-width:700px;margin:0 auto}'
-                                          + 'h1{font-size:20px;font-weight:800;color:#dc2626;margin-bottom:4px}'
-                                          + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}'
-                                          + '.field{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px}'
-                                          + '.label{font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:3px}'
-                                          + '.value{font-size:13px;font-weight:600;color:#1e293b}'
-                                          + '.footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}'
-                                          + '</style></head><body>'
-                                          + '<h1>📅 Reminder Schedule — Servisindo</h1>'
-                                          + '<p style="font-size:12px;color:#64748b">Dicetak: ' + pd + '</p>'
-                                          + '<div class="grid">'
-                                          + '<div class="field"><div class="label">Project</div><div class="value">' + r.project_name + '</div></div>'
-                                          + '<div class="field"><div class="label">Kategori</div><div class="value">' + r.category + '</div></div>'
-                                          + '<div class="field"><div class="label">Handler</div><div class="value">' + (r.assign_name || r.assigned_to) + '</div></div>'
-                                          + '<div class="field"><div class="label">Status</div><div class="value">' + r.status + '</div></div>'
-                                          + '<div class="field"><div class="label">Tanggal</div><div class="value">' + r.due_date + ' ' + (r.due_time || '') + '</div></div>'
-                                          + '<div class="field"><div class="label">Sales</div><div class="value">' + (r.sales_name || '—') + salesDiv + '</div></div>'
-                                          + addressRow + descRow
-                                          + '</div>'
-                                          + '<div class="footer"><div>🔧 Servisindo Work Management</div><div>' + pd + '</div></div>'
-                                          + '</body></html>';
-                                        const w = window.open('','_blank');
-                                        if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
-                                      }} title="Print"
-                                      className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
-                                      style={{ color: '#94a3b8' }}
-                                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
-                                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}>
-                                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                                      </svg>
-                                    </button>
+                                      <button onClick={() => printReminder(r)} title="Print"
+                                        className="p-1.5 rounded-lg transition-all hover:bg-slate-100"
+                                        style={{ color: '#94a3b8' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
+                                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}>
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                        </svg>
+                                      </button>
                                     )}
                                     {/* Hapus — Trash icon, admin only */}
                                     {isAdmin && (
