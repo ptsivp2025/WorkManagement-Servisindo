@@ -9,6 +9,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+// PTS DB — untuk fetch guest/sales list
+const supabasePTS = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_PTS_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PTS_ANON_KEY!
+);
 
 // ─── Fonnte WA via Supabase Edge Function (same pattern as ticketing) ────────
 // ── Fonnte token di-cache dari Supabase app_settings ─────────────────────────
@@ -731,7 +736,7 @@ export default function ReminderSchedulePage() {
     // Gabungkan guest dari Services DB (local) + PTS DB (cross-reference)
     const [{ data: svcGuests }, { data: ptsGuests }] = await Promise.all([
       supabase.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name'),
-      supabasePTS ? supabasePTS.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name') : { data: [] },
+      supabasePTS.from('users').select('id, username, full_name, role, phone_number, sales_division').eq('role', 'guest').order('full_name'),
     ]);
     // Merge, deduplicate by username
     const combined: GuestUser[] = [...(svcGuests ?? []) as GuestUser[]];
