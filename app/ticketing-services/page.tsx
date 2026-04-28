@@ -132,6 +132,9 @@ interface ActivityLog {
   created_at: string;
   file_url?: string;
   file_name?: string;
+  photo_url?: string;
+  photo_name?: string;
+  assigned_to_services?: boolean;
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
