@@ -476,9 +476,9 @@ export default function TicketingServices() {
         const svcTicketLogs = (svcLogs ?? []).filter((l: any) => l.ticket_id === t.id);
         const allLogs = [...existingLogs, ...svcTicketLogs]
           .reduce((acc: ActivityLog[], log: ActivityLog) => {
-            if (!acc.find(l => l.id === log.id)) acc.push(log); return acc;
-          }, [])
-          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            if (!acc.find((l: ActivityLog) => l.id === log.id)) acc.push(log); return acc;
+          }, [] as ActivityLog[])
+          .sort((a: ActivityLog, b: ActivityLog) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         return { ...t, activity_logs: allLogs };
       });
 
@@ -525,7 +525,7 @@ export default function TicketingServices() {
   const exportToPDF = (ticket: Ticket) => {
     const pd = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
     const svcSt = ticket.services_status||'-';
-    const actRows = (ticket.activity_logs||[]).sort((a,b)=>new Date(a.created_at).getTime()-new Date(b.created_at).getTime()).map((log,i)=>`
+    const actRows = (ticket.activity_logs||[]).sort((a: ActivityLog, b: ActivityLog)=>new Date(a.created_at).getTime()-new Date(b.created_at).getTime()).map((log,i)=>`
       <tr style="background:${i%2===0?'#fff':'#f8fafc'}">
         <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;vertical-align:top;width:120px;white-space:nowrap">${formatDateTime(log.created_at)}<br/><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:#fef3c7;color:#92400e">Services</span></td>
         <td style="padding:7px 10px;border:1px solid #e2e8f0;vertical-align:top;width:130px"><span style="font-weight:700;font-size:12px">${log.handler_name||'-'}</span><br/><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:#eff6ff;color:#1d4ed8">${log.new_status}</span></td>
