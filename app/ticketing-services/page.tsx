@@ -295,7 +295,7 @@ function NewTicketModal({ currentUser, teamMembers, onClose, onSaved }: {
 
   useEffect(() => {
     supabasePTS.from('users').select('id, full_name, sales_division').eq('role', 'guest').order('full_name')
-      .then(({ data }) => { if (data) setGuestUsers(data as any[]); });
+      .then(({ data }: { data: any[] | null }) => { if (data) setGuestUsers(data); });
   }, []);
 
   const wordCount = form.issue_case.trim().split(/\s+/).filter(Boolean).length;
