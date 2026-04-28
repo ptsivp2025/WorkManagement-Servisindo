@@ -276,29 +276,29 @@ function NewTicketModal({ currentUser, teamMembers, onClose, onSaved }: {
 }) {
   const [saving, setSaving] = useState(false);
   const [guestUsers, setGuestUsers] = useState<{ id: string; full_name: string; sales_division?: string }[]>([]);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const todayStr = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
+  const todayISO = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+
   const [form, setForm] = useState({
     project_name: '', address: '', customer_phone: '', sales_name: '', sales_division: '',
     sn_unit: '', product: '', issue_case: '', description: '', assign_name: '',
-    date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
+    date: todayISO,
     photo: null as File | null,
   });
   const f = (p: Partial<typeof form>) => setForm(prev => ({ ...prev, ...p }));
   const isAdmin = currentUser.role === 'admin';
-  const inp = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400 outline-none bg-white';
 
-  // Fetch daftar Guest dari PTS DB (sebagai sumber Sales)
+  const iStyle = { background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.12)' };
+  const iCls = 'w-full rounded-xl pl-9 pr-4 py-3 text-sm outline-none transition-all text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500/40';
+  const lCls = 'block text-xs font-bold mb-1.5 tracking-widest uppercase';
+
   useEffect(() => {
-    const fetchGuests = async () => {
-      try {
-        const { data } = await supabasePTS.from('users')
-          .select('id, full_name, sales_division')
-          .eq('role', 'guest')
-          .order('full_name');
-        if (data) setGuestUsers(data as any[]);
-      } catch (e) { console.warn('[NewTicket] fetchGuests failed:', e); }
-    };
-    fetchGuests();
+    supabasePTS.from('users').select('id, full_name, sales_division').eq('role', 'guest').order('full_name')
+      .then(({ data }) => { if (data) setGuestUsers(data as any[]); });
   }, []);
+
+  const wordCount = form.issue_case.trim().split(/\s+/).filter(Boolean).length;
 
   const handleSubmit = async () => {
     if (!form.project_name.trim()) { alert('Nama Project wajib diisi!'); return; }
@@ -313,16 +313,15 @@ function NewTicketModal({ currentUser, teamMembers, onClose, onSaved }: {
         const { error: upErr } = await supabase.storage.from('ticket-files').upload(path, form.photo);
         if (!upErr) {
           const { data: urlData } = supabase.storage.from('ticket-files').getPublicUrl(path);
-          photoUrl = urlData.publicUrl ?? '';
-          photoName = form.photo.name;
+          photoUrl = urlData.publicUrl ?? ''; photoName = form.photo.name;
         }
       }
       const payload: Record<string, unknown> = {
         project_name: form.project_name.trim(),
         address: form.address.trim() || null,
         customer_phone: form.customer_phone.trim() || null,
-        sales_name: form.sales_name.trim() || null,
-        sales_division: form.sales_division.trim() || null,
+        sales_name: form.sales_name || null,
+        sales_division: form.sales_division || null,
         sn_unit: form.sn_unit.trim() || null,
         product: form.product.trim() || null,
         issue_case: form.issue_case.trim(),
@@ -336,139 +335,239 @@ function NewTicketModal({ currentUser, teamMembers, onClose, onSaved }: {
         photo_url: photoUrl || null,
         photo_name: photoName || null,
       };
-
       const { error } = await supabase.from('tickets').insert([payload]);
       if (error) throw new Error(error.message);
-
-      // WA notif ke admin jika non-admin submit
       if (!isAdmin) {
         try {
-          const { data: admins } = await supabase.from('users')
-            .select('phone_number, full_name').eq('role', 'admin')
-            .not('phone_number', 'is', null).neq('phone_number', '');
+          const { data: admins } = await supabase.from('users').select('phone_number,full_name').eq('role','admin').not('phone_number','is',null).neq('phone_number','');
           if (admins?.length) {
-            const msg = [
-              '🔔 *Request Ticket Baru — Servisindo*', '━━━━━━━━━━━━━━━━━━',
-              `📌 Project: ${form.project_name}`, `⚠️ Issue: ${form.issue_case}`,
-              `👤 Dari: ${currentUser.full_name}`, '━━━━━━━━━━━━━━━━━━',
-              'Buka platform Work Management Servisindo untuk approval.',
-            ].join('\n');
-            await Promise.allSettled(
-              (admins as any[]).map((a: any) => sendWA({ type: 'reminder_wa', target: a.phone_number, message: msg }))
-            );
+            const msg = ['🔔 *Request Ticket Baru — Servisindo*','━━━━━━━━━━━━━━━━━━',`📌 Project: ${form.project_name}`,`⚠️ Issue: ${form.issue_case}`,`👤 Dari: ${currentUser.full_name}`,'━━━━━━━━━━━━━━━━━━','Buka platform Work Management Servisindo untuk approval.'].join('\n');
+            await Promise.allSettled((admins as any[]).map((a:any) => sendWA({ type:'reminder_wa', target:a.phone_number, message:msg })));
           }
-        } catch { /* WA failure tidak block submit */ }
+        } catch { /* WA tidak block submit */ }
       }
       onSaved();
-    } catch (e: any) {
-      alert('Gagal menyimpan ticket: ' + e.message);
-    }
+    } catch (e: any) { alert('Gagal: ' + e.message); }
     setSaving(false);
   };
+
+  const sectionDiv = (icon: string, label: string) => (
+    <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+      <span className="text-lg">{icon}</span>
+      <span className="text-sm font-bold tracking-wide text-slate-700">{label}</span>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden" style={{ border: '2px solid rgba(220,38,38,0.3)' }}>
+        {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-          <div><h2 className="font-black text-white text-lg">🎫 New Ticket</h2><p className="text-red-200 text-xs mt-0.5">Buat ticket baru untuk Team Services</p></div>
-          <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white">
+          <div>
+            <h2 className="font-black text-white text-lg flex items-center gap-2">🎫 Create New Ticket</h2>
+            <p className="text-red-200 text-xs mt-0.5">Isi detail ticket &amp; informasi troubleshooting</p>
+          </div>
+          <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-all">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Project Name */}
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Nama Project *</label>
-              <input value={form.project_name} onChange={e => f({ project_name: e.target.value })} className={inp} placeholder="Nama project"/>
-            </div>
-            {/* Issue */}
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Issue Case *</label>
-              <input value={form.issue_case} onChange={e => f({ issue_case: e.target.value })} className={inp} placeholder="Masalah yang dilaporkan"/>
-            </div>
-            {/* Description */}
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Deskripsi</label>
-              <textarea value={form.description} onChange={e => f({ description: e.target.value })} className={inp} rows={2} placeholder="Detail masalah..."/>
-            </div>
-            {/* Product */}
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+          {/* ── Section: Informasi Ticket ── */}
+          {sectionDiv('🎫', 'Informasi Ticket')}
+
+          {/* Row 1: Project Name | Address */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Product</label>
-              <input value={form.product} onChange={e => f({ product: e.target.value })} className={inp} placeholder="Nama produk"/>
-            </div>
-            {/* SN */}
-            <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">SN Unit</label>
-              <input value={form.sn_unit} onChange={e => f({ sn_unit: e.target.value })} className={inp} placeholder="Serial number"/>
-            </div>
-            {/* Address */}
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Lokasi / Alamat</label>
-              <input value={form.address} onChange={e => f({ address: e.target.value })} className={inp} placeholder="Alamat lengkap"/>
-            </div>
-            {/* Sales — dropdown dari Guest PTS DB */}
-            <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Sales / Account</label>
-              <select
-                value={form.sales_name}
-                onChange={e => {
-                  const selected = guestUsers.find(g => g.full_name === e.target.value);
-                  f({ sales_name: e.target.value, sales_division: selected?.sales_division ?? form.sales_division });
-                }}
-                className={inp}>
-                <option value="">-- Pilih Sales --</option>
-                {guestUsers.map(g => (
-                  <option key={g.id} value={g.full_name}>{g.full_name}{g.sales_division ? ` (${g.sales_division})` : ''}</option>
-                ))}
-                <option value="__manual__">-- Input Manual --</option>
-              </select>
-              {/* Manual input jika pilih manual */}
-              {form.sales_name === '__manual__' && (
-                <input value={''} onChange={e => f({ sales_name: e.target.value })}
-                  className={inp + ' mt-2'} placeholder="Ketik nama sales..."/>
-              )}
-            </div>
-            {/* Sales Division — auto dari Guest, bisa override */}
-            <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Divisi Sales</label>
-              <input
-                value={form.sales_division}
-                onChange={e => f({ sales_division: e.target.value })}
-                className={inp}
-                placeholder="Auto dari Sales, atau ketik manual"
-              />
-            </div>
-            {/* Customer */}
-            <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">No. Customer / User</label>
-              <input value={form.customer_phone} onChange={e => f({ customer_phone: e.target.value })} className={inp} placeholder="No telepon / nama user"/>
-            </div>
-            {/* Date */}
-            <div>
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Tanggal</label>
-              <input type="date" value={form.date} onChange={e => f({ date: e.target.value })} className={inp}/>
-            </div>
-            {/* Assign — admin only */}
-            {isAdmin && (
-              <div className="col-span-2">
-                <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Assign To *</label>
-                <select value={form.assign_name} onChange={e => f({ assign_name: e.target.value })} className={inp}>
-                  <option value="">-- Pilih Handler --</option>
-                  {teamMembers.map(m => <option key={m.id} value={m.full_name}>{m.full_name}</option>)}
-                </select>
+              <label className={lCls} style={{ color: '#94a3b8' }}>Project Name *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">📌</span>
+                <input value={form.project_name} onChange={e => f({ project_name: e.target.value })}
+                  placeholder="Example: BCA Cibitung Project" className={iCls} style={iStyle}/>
               </div>
-            )}
-            {/* Photo */}
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widests uppercase">Foto Ticket</label>
-              <input type="file" accept="image/*" onChange={e => f({ photo: e.target.files?.[0] || null })}
-                className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"/>
+            </div>
+            <div>
+              <label className={lCls} style={{ color: '#94a3b8' }}>📍 Address Detail</label>
+              <div className="relative">
+                <span className="absolute left-3 top-3">📍</span>
+                <textarea value={form.address} onChange={e => f({ address: e.target.value })}
+                  rows={2} placeholder="Example: Jl. Jend. Sudirman No. 1..."
+                  className="w-full rounded-xl pl-9 pr-4 py-3 text-sm outline-none transition-all text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500/40 resize-none"
+                  style={iStyle}/>
+              </div>
             </div>
           </div>
+
+          {/* Row 2: Product | SN Unit */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={lCls} style={{ color: '#94a3b8' }}>📦 Product / Brand</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">📦</span>
+                <input value={form.product} onChange={e => f({ product: e.target.value })}
+                  placeholder="Panasonic PT-MZ682, LG 75UL3Q, dll" className={iCls} style={iStyle}/>
+              </div>
+            </div>
+            <div>
+              <label className={lCls} style={{ color: '#94a3b8' }}>SN Unit <span className="text-gray-400 normal-case font-normal text-[10px]">(opsional)</span></label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">🔢</span>
+                <input value={form.sn_unit} onChange={e => f({ sn_unit: e.target.value })}
+                  placeholder="SN12345678 (opsional)" className={iCls} style={iStyle}/>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Customer Phone | Date (auto, disabled) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={lCls} style={{ color: '#94a3b8' }}>Customer Phone</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">📱</span>
+                <input value={form.customer_phone} onChange={e => f({ customer_phone: e.target.value })}
+                  placeholder="Adi - 08xx-xxxx-xxxx" className={iCls} style={iStyle}/>
+              </div>
+            </div>
+            <div>
+              <label className={lCls} style={{ color: '#94a3b8' }}>📅 Date <span className="text-gray-400 normal-case font-normal text-[10px]">(hari ini)</span></label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">📅</span>
+                <input type="text" value={todayStr} disabled
+                  className="w-full rounded-xl pl-9 pr-4 py-3 text-sm text-slate-400 cursor-not-allowed"
+                  style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)' }}/>
+              </div>
+            </div>
+          </div>
+
+          {/* Issue Case — 4 kata maks */}
+          <div>
+            <label className={lCls} style={{ color: '#94a3b8' }}>Issue Case *</label>
+            <div className="relative">
+              <span className="absolute left-3 top-3">⚠️</span>
+              <input value={form.issue_case}
+                onChange={e => {
+                  const val = e.target.value;
+                  const words = val.trim().split(/\s+/).filter(Boolean);
+                  if (words.length < 4 || (words.length === 4 && !val.endsWith(' '))) f({ issue_case: val });
+                }}
+                placeholder="Maks. 4 kata, contoh: Videowall Not Working"
+                className={iCls} style={iStyle}/>
+            </div>
+            <div className="flex justify-between items-center mt-1.5 px-1">
+              <span className="text-xs text-gray-500">Maksimal 4 kata</span>
+              <span className={`text-xs font-bold ${wordCount >= 4 ? 'text-red-500' : 'text-gray-400'}`}>{wordCount}/4 kata</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className={lCls} style={{ color: '#94a3b8' }}>📝 Detailed Description</label>
+            <textarea value={form.description} onChange={e => f({ description: e.target.value })}
+              rows={3} placeholder="Explain the problem details..."
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-red-500/40 resize-none"
+              style={iStyle}/>
+          </div>
+
+          {/* ── Section: Informasi Sales ── */}
+          <div className="pt-1">{sectionDiv('🏢', 'Informasi Sales')}</div>
+
+          {/* Sales Name dropdown dari Guest PTS + auto-fill division */}
+          <div>
+            <label className={lCls} style={{ color: '#94a3b8' }}>Sales Name</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2">👤</span>
+              <select value={form.sales_name}
+                onChange={e => {
+                  const sel = guestUsers.find(g => g.full_name === e.target.value);
+                  f({ sales_name: e.target.value, sales_division: sel?.sales_division ?? '' });
+                }}
+                className="w-full rounded-xl pl-9 pr-8 py-3 text-sm outline-none transition-all text-slate-800 focus:ring-2 focus:ring-red-500/40 appearance-none cursor-pointer"
+                style={iStyle}>
+                <option value="">— Pilih Sales —</option>
+                {guestUsers.map(g => (
+                  <option key={g.id} value={g.full_name}>
+                    {g.full_name}{g.sales_division ? ` (${g.sales_division})` : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs">▾</span>
+            </div>
+            {/* Sales Division — auto dari pilihan Sales, read-only */}
+            {form.sales_division && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
+                <span className="text-xs">🏷️</span>
+                <span className="text-xs font-semibold text-purple-700">Divisi: {form.sales_division}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Section: Assign Handler (admin only) ── */}
+          {isAdmin && (
+            <>
+              <div className="pt-1">{sectionDiv('👷', 'Assign Handler')}</div>
+              <div>
+                <label className={lCls} style={{ color: '#94a3b8' }}>Assign To *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">👨‍💼</span>
+                  <select value={form.assign_name} onChange={e => f({ assign_name: e.target.value })}
+                    className="w-full rounded-xl pl-9 pr-8 py-3 text-sm outline-none transition-all text-slate-800 focus:ring-2 focus:ring-red-500/40 appearance-none cursor-pointer"
+                    style={iStyle}>
+                    <option value="">— Pilih Handler —</option>
+                    {teamMembers.map(m => <option key={m.id} value={m.full_name}>{m.full_name}</option>)}
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs">▾</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Info approval untuk non-admin */}
+          {!isAdmin && (
+            <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(245,158,11,0.1)', border: '1.5px solid rgba(245,158,11,0.3)' }}>
+              <span className="text-2xl">⏳</span>
+              <div>
+                <p className="text-sm font-bold text-orange-800">Perlu Persetujuan Admin</p>
+                <p className="text-xs text-orange-700 mt-0.5">Ticket yang Anda buat akan masuk ke antrian approval Admin terlebih dahulu.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Section: Foto ── */}
+          <div className="pt-1">{sectionDiv('📸', 'Foto Pendukung')}</div>
+          <div>
+            <label className={lCls} style={{ color: '#94a3b8' }}>Upload Foto <span className="text-gray-400 font-normal normal-case">(Opsional)</span></label>
+            <p className="text-xs text-gray-500 mb-3">Foto kondisi awal / bukti masalah</p>
+            <input type="file" accept="image/*"
+              onChange={e => {
+                const file = e.target.files?.[0] || null;
+                f({ photo: file });
+                setPhotoPreview(file ? URL.createObjectURL(file) : null);
+              }}
+              className="w-full border rounded-xl px-4 py-2.5 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-all text-sm"
+              style={{ borderColor: 'rgba(0,0,0,0.12)' }}/>
+            {form.photo && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-white rounded-lg border" style={{ borderColor: 'rgba(220,38,38,0.2)' }}>
+                  <span className="text-red-600">✓</span>
+                  <span className="text-sm font-semibold text-gray-700 flex-1 truncate">{form.photo.name}</span>
+                  <span className="text-xs text-gray-400">({(form.photo.size / 1024).toFixed(1)} KB)</span>
+                  <button type="button" onClick={() => { f({ photo: null }); setPhotoPreview(null); }} className="text-red-400 hover:text-red-600 font-bold text-xs ml-1">✕</button>
+                </div>
+                {photoPreview && <img src={photoPreview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg border-2 shadow-sm" style={{ borderColor: 'rgba(220,38,38,0.3)' }}/>}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-3 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 text-sm">Batal</button>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl font-semibold text-sm transition-all"
+            style={{ background: 'rgba(255,255,255,0.95)', color: '#64748b', border: '1px solid rgba(0,0,0,0.12)' }}>
+            Batal
+          </button>
           <button onClick={handleSubmit} disabled={saving}
             className="flex-[2] text-white py-3 rounded-xl font-bold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
@@ -1574,11 +1673,11 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                     </div>
                   </div>
                 )}
-                <table className="w-full text-sm">
+                <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100" style={{ background: 'rgba(248,250,252,0.8)' }}>
+                    <tr style={{ background: 'rgba(248,250,252,0.95)', borderBottom: '2px solid rgba(220,38,38,0.15)' }}>
                       {selectMode && currentUser?.role === 'admin' && (
-                        <th className="px-3 py-3 w-10">
+                        <th className="px-3 py-3 w-10 border border-slate-100">
                           <input type="checkbox"
                             checked={selectedIds.size === filteredTickets.length && filteredTickets.length > 0}
                             onChange={() => setSelectedIds(prev =>
@@ -1587,78 +1686,85 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                             className="w-4 h-4 rounded accent-red-600 cursor-pointer"/>
                         </th>
                       )}
-                      {['NO', 'NAMA PROJECT', 'ISSUE / PRODUCT', 'SALES', 'HANDLER', 'STATUS SERVICES', 'TANGGAL', 'AKSI'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-[10px] font-bold tracking-widest uppercase text-slate-400">{h}</th>
+                      {['NO', 'NAMA PROJECT', 'ISSUE', 'PRODUCT', 'SN UNIT', 'SALES', 'HANDLER', 'STATUS', 'TGL', 'AKSI'].map(h => (
+                        <th key={h} className="px-3 py-3 text-left text-[10px] font-bold tracking-widest uppercase text-slate-400 border border-slate-100">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTickets.map((t, idx) => (
                       <tr key={t.id}
-                        className={`border-b border-slate-50 hover:bg-red-50/40 cursor-pointer transition-colors group ${selectedIds.has(t.id) ? 'bg-red-50' : ''}`}
+                        className={`hover:bg-red-50/40 cursor-pointer transition-colors group ${selectedIds.has(t.id) ? 'bg-red-50' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
                         onClick={() => openTicket(t)}>
                         {selectMode && currentUser?.role === 'admin' && (
-                          <td className="px-3 py-3.5" onClick={e => e.stopPropagation()}>
-                            <input type="checkbox"
-                              checked={selectedIds.has(t.id)}
-                              onChange={() => setSelectedIds(prev => {
-                                const n = new Set(prev);
-                                n.has(t.id) ? n.delete(t.id) : n.add(t.id);
-                                return n;
-                              })}
+                          <td className="px-3 py-3 border border-slate-100" onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" checked={selectedIds.has(t.id)}
+                              onChange={() => setSelectedIds(prev => { const n = new Set(prev); n.has(t.id) ? n.delete(t.id) : n.add(t.id); return n; })}
                               className="w-4 h-4 rounded accent-red-600 cursor-pointer"/>
                           </td>
                         )}
-                        <td className="px-4 py-3.5 text-slate-400 font-semibold text-xs">{idx + 1}</td>
-                        <td className="px-4 py-3.5">
-                          <p className="font-bold text-slate-800 group-hover:text-red-700 transition-colors line-clamp-1">{t.project_name}</p>
-                          {t.address && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">📍 {t.address}</p>}
+                        {/* NO */}
+                        <td className="px-3 py-3 text-slate-400 font-semibold text-xs border border-slate-100 text-center">{idx + 1}</td>
+                        {/* PROJECT */}
+                        <td className="px-3 py-3 border border-slate-100 max-w-[160px]">
+                          <p className="font-bold text-slate-800 group-hover:text-red-700 transition-colors text-sm leading-tight line-clamp-2">{t.project_name}</p>
+                          {t.address && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">📍 {t.address}</p>}
                         </td>
-                        <td className="px-4 py-3.5">
-                          <p className="font-medium text-slate-600 line-clamp-1 max-w-[140px]">{t.issue_case}</p>
-                          {t.product && <p className="text-xs text-blue-500 mt-0.5 font-semibold">📦 {t.product}</p>}
-                          {t.sn_unit && <p className="text-xs text-slate-400">SN: {t.sn_unit}</p>}
+                        {/* ISSUE */}
+                        <td className="px-3 py-3 border border-slate-100 max-w-[140px]">
+                          <p className="text-sm font-medium text-slate-600 line-clamp-2">{t.issue_case}</p>
+                          {t.description && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{t.description}</p>}
                         </td>
-                        <td className="px-4 py-3.5">
-                          <p className="font-semibold text-slate-700 line-clamp-1">{t.sales_name || '—'}</p>
-                          {t.sales_division && <p className="text-xs text-purple-500 font-semibold">{t.sales_division}</p>}
+                        {/* PRODUCT */}
+                        <td className="px-3 py-3 border border-slate-100">
+                          {t.product
+                            ? <span className="inline-block px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">📦 {t.product}</span>
+                            : <span className="text-slate-300 text-xs">—</span>}
                         </td>
-                        <td className="px-4 py-3.5">
-                          <p className="font-semibold text-slate-700 line-clamp-1">{t.assign_name || '—'}</p>
-                          <p className="text-xs text-red-500 font-medium">Services</p>
+                        {/* SN UNIT */}
+                        <td className="px-3 py-3 border border-slate-100">
+                          {t.sn_unit
+                            ? <span className="text-xs font-mono text-slate-600">{t.sn_unit}</span>
+                            : <span className="text-slate-300 text-xs">—</span>}
                         </td>
-                        <td className="px-4 py-3.5">
-                          {t.services_status ? (
-                            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLORS[t.services_status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                              {t.services_status}
-                            </span>
-                          ) : <span className="text-slate-300 text-xs">—</span>}
+                        {/* SALES */}
+                        <td className="px-3 py-3 border border-slate-100">
+                          <p className="font-semibold text-slate-700 text-sm line-clamp-1">{t.sales_name || '—'}</p>
+                          {t.sales_division && <p className="text-[10px] text-purple-500 font-semibold">{t.sales_division}</p>}
                         </td>
-                        <td className="px-4 py-3.5 text-xs text-slate-400 whitespace-nowrap">{formatDateTime(t.created_at)}</td>
-                        <td className="px-3 py-3.5" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center gap-1.5">
-                            {/* View */}
-                            <button onClick={() => openTicket(t)} title="View Detail"
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        {/* HANDLER */}
+                        <td className="px-3 py-3 border border-slate-100">
+                          <p className="font-semibold text-slate-700 text-sm line-clamp-1">{t.assign_name || '—'}</p>
+                          <p className="text-[10px] text-red-400 font-medium">Services</p>
+                        </td>
+                        {/* STATUS */}
+                        <td className="px-3 py-3 border border-slate-100">
+                          {t.services_status
+                            ? <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_COLORS[t.services_status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>{t.services_status}</span>
+                            : <span className="text-slate-300 text-xs">—</span>}
+                        </td>
+                        {/* TANGGAL */}
+                        <td className="px-3 py-3 border border-slate-100 whitespace-nowrap">
+                          <p className="text-xs text-slate-500">{t.date || formatDateTime(t.created_at).split(',')[0]}</p>
+                          <p className="text-[10px] text-slate-400">{formatDateTime(t.created_at).split(',')[1]?.trim()}</p>
+                        </td>
+                        {/* AKSI */}
+                        <td className="px-3 py-3 border border-slate-100" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => openTicket(t)} title="View" className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             </button>
-                            {/* Print PDF */}
-                            <button onClick={() => exportToPDF(t)} title="Print PDF"
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-green-600 hover:bg-green-50 transition-all">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <button onClick={() => exportToPDF(t)} title="Print PDF" className="p-1.5 rounded-lg text-slate-400 hover:text-green-600 hover:bg-green-50 transition-all">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                             </button>
-                            {/* Approve — admin only, Waiting Approval */}
                             {currentUser?.role === 'admin' && t.services_status === 'Waiting Approval' && (
-                              <button onClick={() => handleApprove(t)} title="Approve"
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-all animate-pulse">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                              <button onClick={() => handleApprove(t)} title="Approve" className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-all animate-pulse">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                               </button>
                             )}
-                            {/* Delete — admin only */}
                             {currentUser?.role === 'admin' && (
-                              <button onClick={() => { setDeleteTarget(t); setDeleteConfirmText(''); setShowDeleteModal(true); }} title="Hapus"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                              <button onClick={() => { setDeleteTarget(t); setDeleteConfirmText(''); setShowDeleteModal(true); }} title="Hapus" className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                               </button>
                             )}
                           </div>
