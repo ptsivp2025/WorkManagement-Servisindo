@@ -667,6 +667,7 @@ export default function ReminderSchedulePage() {
     }
 
     // Fetch parallel — tidak tunggu satu selesai dulu
+    // fetchTeamUsers dipanggil setelah user di-set agar session siap
     Promise.all([
       fetchTeamUsers(),
       fetchGuestUsers(),
@@ -727,15 +728,22 @@ export default function ReminderSchedulePage() {
   // Berjalan otomatis setiap hari tanpa perlu buka halaman
 
   const fetchTeamUsers = async () => {
-    // Fetch semua user dari Services DB (role team + admin)
-    // Services DB adalah source of truth untuk anggota Team Services
+    // Select hanya kolom yang pasti ada di Services DB
+    // (allowed_menus dan team_type mungkin tidak ada di schema Services)
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, full_name, role, team_type, phone_number, sales_division, allowed_menus')
-      .in('role', ['team', 'admin'])
+      .select('id, username, full_name, role, phone_number')
       .order('full_name');
-    if (error) console.warn('[fetchTeamUsers]', error.message);
-    if (data) setTeamUsers(data as TeamUser[]);
+
+    if (error) {
+      console.warn('[fetchTeamUsers] Error:', error.message);
+      return;
+    }
+    if (data) {
+      // Hanya tampilkan role 'team' sebagai pilihan handler (bukan admin)
+      const filtered = (data as any[]).filter(u => u.role === 'team');
+      setTeamUsers((filtered.length > 0 ? filtered : data) as TeamUser[]);
+    }
   };
 
   const fetchGuestUsers = async () => {
@@ -2094,7 +2102,7 @@ export default function ReminderSchedulePage() {
               </button>
 
               {canAddReminder && view === 'list' && (
-                <button onClick={() => { setEditingReminder(null); setFormData(emptyForm); setShowFormModal(true); }}
+                <button onClick={() => { setEditingReminder(null); setFormData(emptyForm); fetchTeamUsers(); setShowFormModal(true); }}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg,#dc2626,#b91c1c)', boxShadow: '0 4px 14px rgba(220,38,38,0.4)' }}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
