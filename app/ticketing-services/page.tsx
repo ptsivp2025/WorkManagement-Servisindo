@@ -259,6 +259,61 @@ function HandlerDonutCard({ data, total, onSliceClick, activeHandler }: { data: 
   );
 }
 
+// ── Mini Donut Chart (generic — Product, Sales Division) ──────────────────────
+function MiniDonutChart({ data, title, emptyMsg }: { data: { name: string; value: number; color: string }[]; title: string; emptyMsg: string }) {
+  const [hov, setHov] = useState<number | null>(null);
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return (
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+      <p className="text-slate-400 text-sm text-center py-4">{emptyMsg}</p>
+    </div>
+  );
+  const r = 44, cx = 60, cy = 60, stroke = 16;
+  const arcs: { path: string; color: string; value: number; name: string }[] = [];
+  let angle = -Math.PI / 2;
+  data.forEach((d, i) => {
+    const sweep = (d.value / total) * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+    const x2 = cx + r * Math.cos(angle + sweep), y2 = cy + r * Math.sin(angle + sweep);
+    const large = sweep > Math.PI ? 1 : 0;
+    arcs.push({ path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, color: d.color, value: d.value, name: d.name });
+    angle += sweep;
+  });
+  const hovered = hov !== null ? data[hov] : null;
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">{title}</p>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 relative" style={{ width: 120, height: 120 }}>
+          <svg viewBox="0 0 120 120" style={{ width: 120, height: 120 }}>
+            {arcs.map((arc, i) => (
+              <path key={i} d={arc.path} fill="none" stroke={arc.color}
+                strokeWidth={hov === i ? stroke + 3 : stroke}
+                strokeLinecap="round"
+                style={{ cursor: 'pointer', transition: 'stroke-width 0.15s', filter: hov === i ? `drop-shadow(0 0 4px ${arc.color}80)` : 'none' }}
+                onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)} />
+            ))}
+            <text x={cx} y={cy - 6} textAnchor="middle" className="font-black" style={{ fontSize: 18, fill: '#1e293b', fontWeight: 900 }}>{hovered ? hovered.value : total}</text>
+            <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: 8, fill: '#94a3b8', fontWeight: 600 }}>{hovered ? hovered.name.slice(0, 10) : 'TOTAL'}</text>
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0 space-y-1 max-h-[120px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-1.5 cursor-pointer rounded px-1 py-0.5 transition-colors hover:bg-slate-50"
+              onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)}>
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
+              <span className="text-[10px] font-medium text-slate-600 flex-1 truncate">{d.name}</span>
+              <span className="text-[10px] font-bold text-slate-800">{d.value}</span>
+              <span className="text-[9px] text-slate-400">({((d.value / total) * 100).toFixed(0)}%)</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── InfoLine ──────────────────────────────────────────────────────────────────
 function InfoLine({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -1012,7 +1067,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
             sales_name:   selectedTicket.sales_name ?? '',
             sales_division: selectedTicket.sales_division ?? '',
             address:      selectedTicket.address ?? '',
-            product:      selectedTicket.product ?? selectedTicket.sn_unit ?? '',
+            product:      selectedTicket.product ?? '',
             pic_name:     selectedTicket.customer_phone ?? '',
             notes:        repairSchedule.notes
               ? `${repairSchedule.notes} | Ticket ID: ${selectedTicket.id}`
@@ -1121,7 +1176,18 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
     const handlerColors = ['#dc2626','#2563eb','#059669','#d97706','#7c3aed','#0891b2','#db2777','#65a30d'];
     const handlerData = Object.entries(handlerCounts).map(([name, value], i) => ({ name, value, color: handlerColors[i % handlerColors.length] }));
 
-    return { total, active, solved, waiting, statusData, handlerData };
+    // Product stats
+    const productCounts: Record<string, number> = {};
+    svcTickets.forEach(t => { if (t.product) productCounts[t.product] = (productCounts[t.product] ?? 0) + 1; });
+    const chartColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#f43f5e'];
+    const productData = Object.entries(productCounts).map(([name, value], i) => ({ name, value, color: chartColors[i % chartColors.length] })).sort((a, b) => b.value - a.value).slice(0, 10);
+
+    // Sales division stats
+    const divCounts: Record<string, number> = {};
+    svcTickets.forEach(t => { if (t.sales_division) divCounts[t.sales_division] = (divCounts[t.sales_division] ?? 0) + 1; });
+    const divData = Object.entries(divCounts).map(([name, value], i) => ({ name, value, color: chartColors[i % chartColors.length] })).sort((a, b) => b.value - a.value).slice(0, 10);
+
+    return { total, active, solved, waiting, statusData, handlerData, productData, divData };
   }, [tickets]);
 
   // ── Filtered tickets ─────────────────────────────────────────────────────
@@ -1573,6 +1639,22 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
               onSliceClick={name => { setHandlerFilter(f => f === name ? null : name); setFilterStatus('All'); }}
               activeHandler={handlerFilter}
             />
+            {/* Product donut chart */}
+            {stats.productData.length > 0 && (
+              <MiniDonutChart
+                data={stats.productData}
+                title="📦 Product"
+                emptyMsg="Belum ada data product"
+              />
+            )}
+            {/* Sales Division donut chart */}
+            {stats.divData.length > 0 && (
+              <MiniDonutChart
+                data={stats.divData}
+                title="🏷️ Sales Division"
+                emptyMsg="Belum ada data divisi"
+              />
+            )}
           </div>
 
           {/* Ticket List */}
