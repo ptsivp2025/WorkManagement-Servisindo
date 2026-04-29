@@ -678,6 +678,7 @@ export default function TicketingServices() {
 
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalTicket, setApprovalTicket] = useState<Ticket | null>(null);
+  const [approvalAssignTo, setApprovalAssignTo] = useState('');
 
   const [loadingMsg, setLoadingMsg] = useState('');
   const [showLoadingPopup, setShowLoadingPopup] = useState(false);
@@ -904,31 +905,62 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
     await fetchLogs(t.id);
   };
 
-  // ── Approve ticket (Waiting Approval → Pending) ──────────────────────────
-  const handleApprove = async (ticket: Ticket) => {
+  // ── Approve ticket (Waiting Approval → Verifying Warranty) ──────────────────────────
+  const handleApprove = async (ticket: Ticket, assignTo?: string) => {
     setShowLoadingPopup(true);
     setLoadingMsg('Menyetujui ticket...');
+    const handlerName = assignTo || ticket.assign_name || '';
     try {
-      await supabasePTS.from('tickets').update({ services_status: 'Pending' }).eq('id', ticket.id);
+      await supabasePTS.from('tickets').update({
+        services_status: 'Verifying Warranty',
+        ...(handlerName ? { assign_name: handlerName } : {}),
+      }).eq('id', ticket.id);
       await supabasePTS.from('activity_logs').insert([{
         ticket_id: ticket.id,
         handler_name: currentUser?.full_name ?? '',
         handler_username: currentUser?.username ?? '',
-        action_taken: 'Ticket disetujui oleh Team Services',
+        action_taken: `Ticket disetujui oleh Admin${handlerName ? ` & di-assign ke ${handlerName}` : ''}`,
         notes: '',
-        new_status: 'Pending',
+        new_status: 'Verifying Warranty',
         team_type: 'Team Services',
         created_at: new Date().toISOString(),
       }]);
       await fetchData(currentUser);
       setShowApprovalModal(false);
       setApprovalTicket(null);
+      setApprovalAssignTo('');
       if (selectedTicket?.id === ticket.id) {
-        setSelectedTicket(t => t ? { ...t, services_status: 'Pending' } : t);
+        setSelectedTicket(t => t ? { ...t, services_status: 'Verifying Warranty', ...(handlerName ? { assign_name: handlerName } : {}) } : t);
         await fetchLogs(ticket.id);
       }
     } catch (e: any) { alert('Gagal approve: ' + e.message); }
     setLoadingMsg('✅ Ticket disetujui!');
+    setTimeout(() => setShowLoadingPopup(false), 1200);
+  };
+
+  // ── Reject ticket (Waiting Approval → hapus / reject) ────────────────────────
+  const handleReject = async (ticket: Ticket) => {
+    if (!confirm(`Tolak ticket "${ticket.project_name}"? Ticket akan dihapus dari antrian.`)) return;
+    setShowLoadingPopup(true);
+    setLoadingMsg('Menolak ticket...');
+    try {
+      await supabasePTS.from('tickets').update({ services_status: 'Void' }).eq('id', ticket.id);
+      await supabasePTS.from('activity_logs').insert([{
+        ticket_id: ticket.id,
+        handler_name: currentUser?.full_name ?? '',
+        handler_username: currentUser?.username ?? '',
+        action_taken: 'Ticket ditolak oleh Admin',
+        notes: 'Ticket rejected dari antrian approval',
+        new_status: 'Void',
+        team_type: 'Team Services',
+        created_at: new Date().toISOString(),
+      }]);
+      await fetchData(currentUser);
+      setShowApprovalModal(false);
+      setApprovalTicket(null);
+      setApprovalAssignTo('');
+    } catch (e: any) { alert('Gagal reject: ' + e.message); }
+    setLoadingMsg('✅ Ticket ditolak!');
     setTimeout(() => setShowLoadingPopup(false), 1200);
   };
 
@@ -1410,7 +1442,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                     </button>
                   )}
                   {currentUser?.role === 'admin' && selectedTicket.services_status === 'Waiting Approval' && (
-                    <button onClick={() => handleApprove(selectedTicket)}
+                    <button onClick={() => { setApprovalTicket(selectedTicket); setApprovalAssignTo(''); setShowApprovalModal(true); }}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white"
                       style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>✅ Approve</button>
                   )}
@@ -1496,24 +1528,107 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
         )}
 
 
-        {/* Approval Modal */}
+        {/* Approval Modal — redesigned per screenshot */}
         {showApprovalModal && approvalTicket && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9500] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" style={{ border: '2px solid rgba(220,38,38,0.3)' }}>
-              <h3 className="font-bold text-lg text-slate-800 mb-2">Approve Ticket?</h3>
-              <p className="text-sm text-slate-600 mb-4">
-                Setujui ticket <strong>{approvalTicket.project_name}</strong> dari Team PTS untuk ditangani Team Services?
-              </p>
-              <div className="flex gap-3">
-                <button onClick={() => { setShowApprovalModal(false); setApprovalTicket(null); }}
-                  className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-semibold hover:bg-slate-50">
-                  Batal
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style={{ border: '2px solid rgba(234,88,12,0.25)' }}>
+              {/* Orange header */}
+              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-xl">⏳</div>
+                  <div>
+                    <h3 className="font-black text-white text-base leading-tight">Ticket Approval</h3>
+                    <p className="text-orange-100 text-xs mt-0.5">
+                      {tickets.filter(t => t.services_status === 'Waiting Approval').length} ticket menunggu persetujuan
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => { setShowApprovalModal(false); setApprovalTicket(null); setApprovalAssignTo(''); }}
+                  className="p-1.5 bg-white/15 hover:bg-white/25 rounded-lg text-white transition-all">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
-                <button onClick={() => handleApprove(approvalTicket)}
-                  className="flex-1 text-white py-2.5 rounded-xl font-bold"
-                  style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                  ✅ Ya, Approve
-                </button>
+              </div>
+
+              {/* Ticket card */}
+              <div className="p-4">
+                <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(255,247,237,0.8)', border: '1px solid rgba(234,88,12,0.15)' }}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🏢</span>
+                      <span className="font-black text-slate-800 text-sm">{approvalTicket.project_name}</span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border" style={{ background: '#fff7ed', color: '#ea580c', borderColor: '#fed7aa' }}>⏳ Waiting Approval</span>
+                  </div>
+                  {approvalTicket.address && (
+                    <p className="text-xs text-orange-500 font-medium mb-1">⚠️ {approvalTicket.address}</p>
+                  )}
+                  {approvalTicket.issue_case && (
+                    <p className="text-xs text-slate-600 mb-2">{approvalTicket.issue_case}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    {approvalTicket.sales_name && (
+                      <span className="flex items-center gap-1">👤 {approvalTicket.sales_name}</span>
+                    )}
+                    {approvalTicket.assign_name && (
+                      <span className="flex items-center gap-1">🏢 {approvalTicket.assign_name}</span>
+                    )}
+                    {approvalTicket.product && (
+                      <span className="flex items-center gap-1">🔲 {approvalTicket.product}</span>
+                    )}
+                  </div>
+                  {approvalTicket.created_by && (
+                    <p className="text-[10px] text-orange-500 font-semibold mt-2">
+                      Dibuat oleh: {approvalTicket.created_by} · {formatDateTime(approvalTicket.created_at).split(',')[0]}
+                    </p>
+                  )}
+                </div>
+
+                {/* Separator */}
+                <div className="border-t border-slate-100 mb-4" />
+
+                {/* Assign ke Team PTS */}
+                <div className="mb-4">
+                  <label className="block text-xs font-bold mb-2 text-slate-600 flex items-center gap-1.5">
+                    <span>🧑‍🔧</span> Assign ke Team Services:
+                  </label>
+                  <select
+                    value={approvalAssignTo}
+                    onChange={e => setApprovalAssignTo(e.target.value)}
+                    className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all text-slate-700 appearance-none cursor-pointer focus:ring-2 focus:ring-orange-400/40"
+                    style={{ background: 'white', border: '1.5px solid rgba(0,0,0,0.14)' }}>
+                    <option value="">Pilih anggota Team Services</option>
+                    {teamMembers.map(m => <option key={m.id} value={m.full_name}>{m.full_name}</option>)}
+                  </select>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleReject(approvalTicket)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                    style={{ background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/></svg>
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleApprove(approvalTicket, approvalAssignTo || undefined)}
+                    className="flex-[1.4] flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                    style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                    Approve
+                  </button>
+                </div>
+
+                {/* Navigation for multiple pending tickets */}
+                {tickets.filter(t => t.services_status === 'Waiting Approval').length > 1 && (
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    {tickets.filter(t => t.services_status === 'Waiting Approval').map((t, i) => (
+                      <button key={t.id}
+                        onClick={() => { setApprovalTicket(t); setApprovalAssignTo(''); }}
+                        className={`w-2 h-2 rounded-full transition-all ${approvalTicket.id === t.id ? 'bg-orange-500 scale-125' : 'bg-slate-300 hover:bg-slate-400'}`} />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1575,7 +1690,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
             <div className="flex items-center gap-2 flex-wrap">
               {/* Approval button — admin only */}
               {currentUser?.role === 'admin' && pendingApprovalCount > 0 && (
-                <button onClick={() => { setApprovalTicket(tickets.find(t => t.services_status === 'Waiting Approval') ?? null); setShowApprovalModal(true); }}
+                <button onClick={() => { setApprovalTicket(tickets.find(t => t.services_status === 'Waiting Approval') ?? null); setApprovalAssignTo(''); setShowApprovalModal(true); }}
                   className="relative flex items-center gap-1.5 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all"
                   style={{ background: 'linear-gradient(135deg,#ea580c,#c2410c)', boxShadow: '0 2px 8px rgba(234,88,12,0.35)' }}>
                   🔧 Ticket Masuk
@@ -1626,8 +1741,8 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
             ))}
           </div>
 
-          {/* Mini charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Mini charts — 4 kolom 1 baris */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatusDonutCard
               data={stats.statusData}
               total={stats.statusData.reduce((s, d) => s + d.value, 0)}
@@ -1840,7 +1955,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                             </button>
                             {currentUser?.role === 'admin' && t.services_status === 'Waiting Approval' && (
-                              <button onClick={() => handleApprove(t)} title="Approve" className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-all animate-pulse">
+                              <button onClick={() => { setApprovalTicket(t); setApprovalAssignTo(''); setShowApprovalModal(true); }} title="Approve" className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-all animate-pulse">
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                               </button>
                             )}
