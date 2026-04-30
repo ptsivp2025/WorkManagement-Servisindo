@@ -294,79 +294,52 @@ function MiniPieChart({
   activeFilter?: string | null;
   onSliceClick?: (label: string) => void;
 }) {
-  const [hov, setHov] = useState<number | null>(null);
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return (
-    <div className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)' }}>
-      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{icon} {title}</p>
-      <p className="text-gray-400 text-sm text-center py-4">Belum ada data</p>
+    <div className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.07)', backdropFilter: 'blur(10px)' }}>
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{icon} {title}</p>
+      <p className="text-slate-400 text-xs text-center py-4">Belum ada data</p>
     </div>
   );
 
-  let cumAngle = -Math.PI / 2;
-  const cx = 60, cy = 60, r = 50, ir = 28;
-
-  const slices = data.map((d, i) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    if (data.length === 1) return { ...d, path: '', isFullCircle: true, i };
-    const x1 = cx + r * Math.cos(cumAngle), y1 = cy + r * Math.sin(cumAngle);
-    const x2 = cx + r * Math.cos(cumAngle + angle), y2 = cy + r * Math.sin(cumAngle + angle);
-    const xi1 = cx + ir * Math.cos(cumAngle), yi1 = cy + ir * Math.sin(cumAngle);
-    const xi2 = cx + ir * Math.cos(cumAngle + angle), yi2 = cy + ir * Math.sin(cumAngle + angle);
-    const large = angle > Math.PI ? 1 : 0;
-    const path = `M ${xi1} ${yi1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${ir} ${ir} 0 ${large} 0 ${xi1} ${yi1} Z`;
-    cumAngle += angle;
-    return { ...d, path, isFullCircle: false, i };
-  });
+  const sorted = [...data].sort((a, b) => b.value - a.value);
 
   return (
-    <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)' }}>
-      <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">{icon} {title}</p>
-      <div className="flex items-center gap-3">
-        <svg width="120" height="120" viewBox="0 0 120 120" className="flex-shrink-0">
-          {slices.map((s) => (
-            s.isFullCircle ? (
-              <g key={s.i} style={{ cursor: onSliceClick ? 'pointer' : 'default' }}
-                onClick={() => onSliceClick && onSliceClick(s.label)}
-                onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}>
-                <circle cx={60} cy={60} r={50} fill={s.color}
-                  opacity={hov === null || hov === s.i ? 1 : 0.45}
-                  style={{ filter: hov === s.i || activeFilter === s.label ? `drop-shadow(0 0 5px ${s.color})` : 'none' }} />
-                <circle cx={60} cy={60} r={28} fill="white" />
-              </g>
-            ) : (
-            <path key={s.i} d={s.path} fill={s.color}
-              opacity={hov === null || hov === s.i ? 1 : 0.45}
-              style={{ cursor: onSliceClick ? 'pointer' : 'default', transition: 'opacity 0.15s', filter: hov === s.i || activeFilter === s.label ? `drop-shadow(0 0 5px ${s.color})` : 'none' }}
-              onMouseEnter={() => setHov(s.i)}
-              onMouseLeave={() => setHov(null)}
-              onClick={() => onSliceClick && onSliceClick(s.label)} />
-            )
-          ))}
-          <text x="60" y="57" textAnchor="middle" fontSize="16" fontWeight="800" fill="#1e293b">{total}</text>
-          <text x="60" y="70" textAnchor="middle" fontSize="7" fill="#94a3b8" fontWeight="600">TOTAL</text>
-        </svg>
-        <div className="flex flex-col gap-1 flex-1 min-w-0 max-h-[120px] overflow-y-auto">
-          {slices.map((s) => {
-            const isActive = activeFilter === s.label;
-            return (
-              <div key={s.i}
-                className="flex items-center gap-1.5 cursor-pointer rounded-lg px-1.5 py-0.5 transition-all"
-                style={{
-                  background: hov === s.i || isActive ? `${s.color}20` : 'transparent',
-                  outline: isActive ? `1.5px solid ${s.color}` : 'none',
-                }}
-                onMouseEnter={() => setHov(s.i)}
-                onMouseLeave={() => setHov(null)}
-                onClick={() => onSliceClick && onSliceClick(s.label)}>
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                <span className="text-[10px] font-semibold text-gray-600 truncate flex-1">{s.label}</span>
-                <span className="text-[10px] font-bold flex-shrink-0" style={{ color: s.color }}>{s.value}</span>
-                {isActive && <span className="text-[9px] font-bold text-purple-600 flex-shrink-0">✓</span>}
+    <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.07)', backdropFilter: 'blur(10px)' }}>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{icon} {title}</p>
+        <span className="text-[10px] font-black text-slate-400">{total} total</span>
+      </div>
+      <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        {sorted.map((d) => {
+          const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+          const isActive = activeFilter === d.label;
+          return (
+            <div key={d.label}
+              className="cursor-pointer group"
+              onClick={() => onSliceClick && onSliceClick(d.label)}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[10px] font-semibold truncate flex-1 pr-2"
+                  style={{ color: isActive ? d.color : '#475569' }}>
+                  {d.label}
+                </span>
+                <span className="text-[10px] font-black flex-shrink-0" style={{ color: d.color }}>{d.value}</span>
               </div>
-            );
-          })}
-        </div>
+              <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${pct}%`,
+                    background: d.color,
+                    opacity: isActive ? 1 : 0.65,
+                    boxShadow: isActive ? `0 0 6px ${d.color}80` : 'none',
+                  }} />
+              </div>
+              {isActive && (
+                <div className="text-[9px] font-bold mt-0.5" style={{ color: d.color }}>✓ Filter aktif</div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -386,7 +359,8 @@ function MiniCalendar({ reminders, calendarMonth, setCalendarMonth, selectedCalD
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const today = new Date().toISOString().split('T')[0];
 
-  const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+  const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const shortDay = ['M','S','R','K','J','S','M'];
 
   const getCount = (day: number) => {
     const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -396,44 +370,56 @@ function MiniCalendar({ reminders, calendarMonth, setCalendarMonth, selectedCalD
   const totalThisMonth = reminders.filter(r => r.due_date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).length;
 
   return (
-    <div className="rounded-2xl overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)', backdropFilter: 'blur(12px)', width: 380 }}>
-      <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-        <button onClick={() => setCalendarMonth(new Date(y, m-1, 1))} className="text-white/80 hover:text-white font-bold text-lg px-2 py-0.5 rounded-lg hover:bg-white/10 transition-all">‹</button>
+    <div className="rounded-2xl flex-shrink-0 overflow-hidden" style={{ width: 360, background: 'linear-gradient(160deg,#1e293b 0%,#0f172a 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+      {/* Month nav */}
+      <div className="px-5 py-4 flex items-center justify-between">
+        <button onClick={() => setCalendarMonth(new Date(y, m-1, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all font-bold text-lg">‹</button>
         <div className="text-center">
-          <p className="text-white font-bold text-sm">{monthNames[m]} {y}</p>
-          <p className="text-white/70 text-[10px] mt-0.5">{totalThisMonth} jadwal bulan ini</p>
+          <p className="text-white font-black text-base tracking-wide">{monthNames[m]}</p>
+          <p className="text-slate-400 text-xs font-semibold mt-0.5">{y} · <span className="text-amber-400">{totalThisMonth} jadwal</span></p>
         </div>
-        <button onClick={() => setCalendarMonth(new Date(y, m+1, 1))} className="text-white/80 hover:text-white font-bold text-lg px-2 py-0.5 rounded-lg hover:bg-white/10 transition-all">›</button>
+        <button onClick={() => setCalendarMonth(new Date(y, m+1, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all font-bold text-lg">›</button>
       </div>
 
-      <div className="p-3">
-        <div className="grid grid-cols-7 mb-1.5">
-          {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d,i) => (
-            <div key={i} className="text-center text-[10px] font-bold py-1" style={{ color: '#94a3b8' }}>{d}</div>
+      {/* Day headers */}
+      <div className="px-4 pb-1">
+        <div className="grid grid-cols-7">
+          {shortDay.map((d,i) => (
+            <div key={i} className={`text-center text-[10px] font-bold py-1.5 ${i >= 5 ? 'text-amber-400/70' : 'text-slate-500'}`}>{d}</div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        {/* Grid */}
+        <div className="grid grid-cols-7 gap-y-1 pb-3">
           {Array.from({ length: (firstDay === 0 ? 6 : firstDay - 1) }).map((_, i) => <div key={`e-${i}`} />)}
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
             const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
             const cnt = getCount(day);
             const isSel = selectedCalDay === ds;
             const isToday = ds === today;
+            const isWeekend = (new Date(ds).getDay() === 0 || new Date(ds).getDay() === 6);
             return (
               <button key={day} onClick={() => setSelectedCalDay(isSel ? null : ds)}
-                className="relative flex flex-col items-center justify-center rounded-lg transition-all hover:scale-105"
+                className="relative flex flex-col items-center justify-center rounded-xl transition-all hover:scale-110 py-1.5"
                 style={{
-                  width: '100%', aspectRatio: '1',
-                  background: isSel ? '#dc2626' : isToday ? 'rgba(220,38,38,0.12)' : cnt > 0 ? 'rgba(99,102,241,0.08)' : 'transparent',
-                  border: isToday && !isSel ? '2px solid rgba(220,38,38,0.5)' : isSel ? '2px solid #b91c1c' : cnt > 0 ? '1.5px solid rgba(99,102,241,0.22)' : '2px solid transparent',
-                  boxShadow: isSel ? '0 2px 8px rgba(220,38,38,0.35)' : 'none',
+                  background: isSel
+                    ? 'linear-gradient(135deg,#dc2626,#991b1b)'
+                    : isToday
+                    ? 'rgba(220,38,38,0.18)'
+                    : cnt > 0
+                    ? 'rgba(99,102,241,0.15)'
+                    : 'transparent',
+                  boxShadow: isSel ? '0 2px 10px rgba(220,38,38,0.5)' : isToday ? '0 0 0 1.5px rgba(220,38,38,0.5)' : cnt > 0 ? '0 0 0 1px rgba(99,102,241,0.3)' : 'none',
                 }}>
-                <span className={`leading-none font-${cnt > 0 ? 'black' : 'semibold'} text-xs`}
-                  style={{ color: isSel ? 'white' : isToday ? '#dc2626' : cnt > 0 ? '#4f46e5' : '#374151' }}>{day}</span>
+                <span className="text-xs font-bold leading-none"
+                  style={{ color: isSel ? 'white' : isToday ? '#f87171' : cnt > 0 ? '#a5b4fc' : isWeekend ? '#64748b' : '#94a3b8' }}>
+                  {day}
+                </span>
                 {cnt > 0 && (
-                  <span className="text-[8px] font-bold leading-none mt-0.5 px-1.5 rounded-full"
-                    style={{ background: isSel ? 'rgba(255,255,255,0.35)' : '#4f46e5', color: 'white' }}>
+                  <span className="mt-0.5 text-[8px] font-black rounded-full px-1 leading-none"
+                    style={{ background: isSel ? 'rgba(255,255,255,0.3)' : '#6366f1', color: 'white' }}>
                     {cnt}
                   </span>
                 )}
@@ -447,17 +433,17 @@ function MiniCalendar({ reminders, calendarMonth, setCalendarMonth, selectedCalD
       {selectedCalDay && (() => {
         const dayRems = reminders.filter(r => r.due_date === selectedCalDay);
         return dayRems.length > 0 ? (
-          <div className="border-t p-3 space-y-2" style={{ borderColor: 'rgba(0,0,0,0.08)', background: 'rgba(249,250,251,0.8)' }}>
-            <p className="text-[10px] font-bold tracking-widest uppercase text-gray-500 px-1">
+          <div className="border-t p-3 space-y-2" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)' }}>
+            <p className="text-[10px] font-bold tracking-widest uppercase px-1" style={{ color: '#94a3b8' }}>
               📅 {formatDate(selectedCalDay)} — {dayRems.length} jadwal
             </p>
             {dayRems.map(r => (
-              <div key={r.id} className="rounded-xl p-3 border"
-                style={{ background: 'white', borderColor: 'rgba(0,0,0,0.08)' }}>
+              <div key={r.id} className="rounded-xl p-3"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-800 truncate">{(r.project_name || '').trim() || ((r as any).title || '').trim() || '—'}</p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">⏰ {r.due_time} · 👤 {r.assign_name}</p>
+                    <p className="text-sm font-bold text-white truncate">{(r.project_name || '').trim() || ((r as any).title || '').trim() || '—'}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>⏰ {r.due_time} · 👤 {r.assign_name}</p>
                   </div>
                   <CategoryBadge category={r.category} />
                 </div>
@@ -466,6 +452,16 @@ function MiniCalendar({ reminders, calendarMonth, setCalendarMonth, selectedCalD
           </div>
         ) : null;
       })()}
+    </div>
+  );
+}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected day events (new dark calendar already has this above) */}
     </div>
   );
 }
@@ -1824,83 +1820,97 @@ export default function ReminderSchedulePage() {
                 )}
               </div>
 
-              <div className="p-5 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 180px)' }}>
-                <div>
-                  <SectionHeaderSmall icon="📋" title="Detail Jadwal" />
-                  <div className="mt-3 grid grid-cols-2 gap-4">
-                    <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)' }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: '#64748b' }}>Assign To</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                          style={{ background: 'rgba(220,38,38,0.2)', color: '#dc2626' }}>
-                          {detailReminder.assign_name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{detailReminder.assign_name}</p>
-                          <p className="text-xs" style={{ color: '#64748b' }}>@{detailReminder.assigned_to}</p>
-                        </div>
+              <div className="p-5 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 180px)' }}>
+                {/* Jadwal & Assign */}
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(220,38,38,0.05)', borderBottom: '1px solid rgba(220,38,38,0.1)' }}>
+                    <span className="text-sm">👤</span>
+                    <p className="text-[11px] font-bold tracking-widest uppercase text-red-700">Informasi Assign & Jadwal</p>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    <div className="flex items-center px-4 py-3 gap-3">
+                      <span className="text-sm flex-shrink-0">👷</span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Assign To</p>
+                        <p className="text-sm font-bold text-slate-800">{detailReminder.assign_name}</p>
+                        <p className="text-[11px] text-slate-500">@{detailReminder.assigned_to}</p>
                       </div>
                     </div>
-                    <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)' }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: '#64748b' }}>📅 Jadwal</p>
-                      <p className="text-sm font-bold text-slate-800">{formatDate(detailReminder.due_date)}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>⏰ {detailReminder.due_time}</p>
+                    <div className="flex items-center px-4 py-3 gap-3">
+                      <span className="text-sm flex-shrink-0">📅</span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Jadwal</p>
+                        <p className="text-sm font-bold text-slate-800">{formatDate(detailReminder.due_date)}</p>
+                        <p className="text-[11px] text-slate-500">⏰ {detailReminder.due_time}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <SectionHeaderSmall icon="🏢" title="Informasi Project" />
-                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
-                    {detailReminder.product && <InfoRow icon="📦" label="Product / Unit" value={detailReminder.product} />}
-                    <InfoRow icon="👤" label="Nama Sales & Divisi" value={[detailReminder.sales_name, detailReminder.sales_division].filter(Boolean).join(' / ')} />
-                    {detailReminder.sales_name && (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(detailReminder.category) && (
-                      <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(124,58,237,0.04)' }}>
-                        <span className="text-base flex-shrink-0">⭐</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#7c3aed' }}>Guest Review (Sales)</p>
-                          <p className="text-sm font-semibold text-violet-700">{detailReminder.sales_name}</p>
-                          {detailReminder.sales_division && <p className="text-[10px] text-violet-500">{detailReminder.sales_division}</p>}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {detailReminder.status === 'done' ? (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full text-white" style={{ background: '#7c3aed' }}>
-                              Form Review ✓
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.15)', color: '#d97706', border: '1px solid rgba(245,158,11,0.4)' }}>
-                              ⏳ Setelah Completed
-                            </span>
-                          )}
-                        </div>
+                {/* Informasi Project */}
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(99,102,241,0.05)', borderBottom: '1px solid rgba(99,102,241,0.1)' }}>
+                    <span className="text-sm">🏢</span>
+                    <p className="text-[11px] font-bold tracking-widest uppercase text-indigo-700">Informasi Project</p>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {detailReminder.product && (
+                      <div className="flex items-center px-4 py-3 gap-3">
+                        <span className="text-sm flex-shrink-0">📦</span>
+                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Product / Unit</p><p className="text-sm font-semibold text-slate-800">{detailReminder.product}</p></div>
                       </div>
                     )}
-                    {detailReminder.pic_name && <InfoRow icon="🙋" label="Nama PIC Project" value={detailReminder.pic_name} />}
+                    {(detailReminder.sales_name || detailReminder.sales_division) && (
+                      <div className="flex items-center px-4 py-3 gap-3">
+                        <span className="text-sm flex-shrink-0">👤</span>
+                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sales & Divisi</p><p className="text-sm font-semibold text-slate-800">{[detailReminder.sales_name, detailReminder.sales_division].filter(Boolean).join(' / ')}</p></div>
+                      </div>
+                    )}
+                    {detailReminder.pic_name && (
+                      <div className="flex items-center px-4 py-3 gap-3">
+                        <span className="text-sm flex-shrink-0">🙋</span>
+                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nama PIC Project</p><p className="text-sm font-semibold text-slate-800">{detailReminder.pic_name}</p></div>
+                      </div>
+                    )}
                     {detailReminder.pic_phone && (
-                      <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                        <span className="text-base flex-shrink-0">📱</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#64748b' }}>No. Telepon PIC</p>
-                          <a href={`tel:${detailReminder.pic_phone}`} className="text-sm font-semibold hover:underline" style={{ color: '#60a5fa' }}
-                            onClick={e => e.stopPropagation()}>{detailReminder.pic_phone}</a>
+                      <div className="flex items-center px-4 py-3 gap-3">
+                        <span className="text-sm flex-shrink-0">📱</span>
+                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">No. Telepon PIC</p>
+                          <a href={`tel:${detailReminder.pic_phone}`} className="text-sm font-semibold text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{detailReminder.pic_phone}</a>
                         </div>
                       </div>
                     )}
-                    {detailReminder.description && <InfoRow icon="📝" label="Deskripsi" value={detailReminder.description} />}
+                    {detailReminder.description && (
+                      <div className="flex items-start px-4 py-3 gap-3">
+                        <span className="text-sm flex-shrink-0 mt-0.5">📝</span>
+                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Deskripsi</p><p className="text-sm font-medium text-slate-700 leading-relaxed">{detailReminder.description}</p></div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
+                {/* Catatan */}
                 {detailReminder.notes && (
-                  <div className="rounded-xl p-4" style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                    <p className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: '#f59e0b' }}>📝 Catatan</p>
-                    <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{detailReminder.notes}</p>
+                  <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.04)' }}>
+                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
+                      <span className="text-sm">📝</span>
+                      <p className="text-[11px] font-bold tracking-widest uppercase text-amber-700">Catatan</p>
+                    </div>
+                    <div className="px-4 py-3">
+                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{detailReminder.notes}</p>
+                    </div>
                   </div>
                 )}
 
-                <div>
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: '#64748b' }}>Update Status</p>
+                {/* Update Status */}
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(16,185,129,0.2)', background: '#fff' }}>
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.05)', borderBottom: '1px solid rgba(16,185,129,0.12)' }}>
+                    <span className="text-sm">🔄</span>
+                    <p className="text-[11px] font-bold tracking-widest uppercase text-emerald-700">Update Status</p>
+                  </div>
+                  <div className="p-4">
                   {detailReminder.status === 'done' ? (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-2 mb-3" style={{ background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.35)' }}>
+                    <div className="rounded-xl px-4 py-3 flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.35)' }}>
                       <span className="text-lg">✅</span>
                       <div>
                         <p className="text-xs font-bold text-emerald-700">Jadwal Selesai</p>
@@ -1993,6 +2003,7 @@ export default function ReminderSchedulePage() {
                       </button>
                     </div>
                   )}
+                </div>
                 </div>
 
                 {/* Foto Bukti Selesai - tampil jika status done dan ada foto */}
@@ -2359,23 +2370,23 @@ export default function ReminderSchedulePage() {
                           <col style={{ width: '8%' }} />
                         </colgroup>
                         <thead>
-                          <tr className="border-b-2 border-gray-100" style={{ background: "rgba(255,255,255,0.97)" }}>
-                            <th className="px-3 py-2.5 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">
+                          <tr style={{ background: 'linear-gradient(90deg,rgba(220,38,38,0.06),rgba(220,38,38,0.02))', borderBottom: '2px solid rgba(220,38,38,0.15)' }}>
+                            <th className="px-3 py-3 text-center text-[10px] font-black text-red-400 uppercase tracking-wider border-r border-red-50">
                       {selectMode && (isAdmin || currentUser?.role === 'superadmin')
                         ? <input type="checkbox"
                             checked={selectedIds.size === filteredReminders.length && filteredReminders.length > 0}
                             onChange={toggleSelectAll} className="w-4 h-4 rounded accent-red-600 cursor-pointer" title="Pilih Semua" />
-                        : 'No'}
+                        : '#'}
                     </th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Project</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Product</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Kegiatan</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Sales</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Handler</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">PIC</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Status</th>
-                            <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide border-r border-gray-200">Tanggal</th>
-                            <th className="px-2 py-2.5 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wide">Action</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Project</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Product</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Kegiatan</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Sales</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Handler</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">PIC</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Status</th>
+                            <th className="px-3 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider border-r border-red-50">Tanggal</th>
+                            <th className="px-2 py-3 text-center text-[10px] font-black text-slate-500 uppercase tracking-wider">Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2383,23 +2394,24 @@ export default function ReminderSchedulePage() {
                             const today = isDueToday(r.due_date);
                             return (
                               <tr key={r.id}
-                                className={`border-b border-gray-200 hover:bg-red-50/30 transition-colors cursor-pointer ${today ? 'bg-red-50/15 border-l-4 border-l-red-400' : 'border-l-4 border-l-transparent'}`}
+                                className={`border-b transition-colors cursor-pointer ${today ? 'bg-red-50/30 border-l-[3px] border-l-red-400' : idx % 2 === 0 ? 'bg-white border-l-[3px] border-l-transparent' : 'bg-slate-50/50 border-l-[3px] border-l-transparent'} hover:bg-red-50/20`}
+                                style={{ borderBottomColor: 'rgba(0,0,0,0.05)' }}
                                 >
                                 {/* No */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle text-center" onClick={e => e.stopPropagation()}>
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle text-center" onClick={e => e.stopPropagation()}>
                             {selectMode && (isAdmin || currentUser?.role === 'superadmin')
                               ? <input type="checkbox" checked={selectedIds.has(r.id)}
                                   onChange={() => toggleSelectId(r.id)} className="w-4 h-4 rounded accent-red-600 cursor-pointer" />
                               : <span className="text-[11px] font-bold text-gray-500">{idx + 1}</span>}
                           </td>
                                 {/* Project */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   <div className="font-bold text-gray-800 text-xs leading-tight break-words">{(r.project_name || '').trim() || (r.title || '').trim() || '—'}</div>
                                   {r.address && <div className="text-[10px] text-gray-400 truncate mt-0.5">📍 {r.address.split(',')[0]}</div>}
                                   <div className="text-[10px] text-gray-400 mt-0.5">{formatDatetime(r.created_at).split(',')[0]}</div>
                                 </td>
                                 {/* Product */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   {r.product ? (
                                     <button
                                       onClick={e => { e.stopPropagation(); setProductFilter(productFilter === r.product ? null : (r.product ?? null)); }}
@@ -2410,7 +2422,7 @@ export default function ReminderSchedulePage() {
                                   ) : <span className="text-gray-300 text-xs">—</span>}
                                 </td>
                                 {/* Kegiatan */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   <div className="flex items-center gap-1">
                                     <span className="text-sm">{(CATEGORY_CONFIG[r.category] ?? { icon: '📁' }).icon}</span>
                                     <span className="text-[10px] font-semibold text-gray-700 leading-tight break-words">{r.category}</span>
@@ -2431,12 +2443,12 @@ export default function ReminderSchedulePage() {
                                   )}
                                 </td>
                                 {/* Sales */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   <div className="text-xs font-semibold text-gray-700 leading-tight truncate">{r.sales_name || '—'}</div>
                                   {r.sales_division && <div className="text-[10px] text-purple-600 font-semibold truncate mt-0.5">{r.sales_division}</div>}
                                 </td>
                                 {/* Handler */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   <div className="flex items-center gap-1">
                                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
                                       style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
@@ -2446,7 +2458,7 @@ export default function ReminderSchedulePage() {
                                   </div>
                                 </td>
                                 {/* PIC */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   {r.pic_name ? (
                                     <>
                                       <div className="text-[10px] font-semibold text-gray-700 truncate">{r.pic_name}</div>
@@ -2455,12 +2467,12 @@ export default function ReminderSchedulePage() {
                                   ) : <span className="text-gray-300 text-xs">—</span>}
                                 </td>
                                 {/* Status */}
-                                <td className="px-3 py-3 border-r border-gray-200 align-middle">
+                                <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   <StatusBadge status={r.status} />
                                   {r.wa_sent_h1 && <p className="text-[9px] font-bold text-green-600 mt-0.5">✅ WA H-1</p>}
                                 </td>
                                 {/* Tanggal */}
-                                <td className="px-2 py-1 border-r border-gray-200 align-middle">
+                                <td className="px-2 py-1 border-r border-slate-100/60 align-middle">
                                   <div className="inline-flex flex-col items-center px-2 py-1 rounded-lg text-center"
                                     style={{
                                       background: today ? 'rgba(220,38,38,0.12)' : 'rgba(99,102,241,0.08)',
@@ -2476,7 +2488,7 @@ export default function ReminderSchedulePage() {
                                   </div>
                                 </td>
                                 {/* ACT */}
-                                <td className="px-3 py-1 align-middle text-center" onClick={e => e.stopPropagation()}>
+                                <td className="px-3 py-1 align-middle text-center border-r-0" onClick={e => e.stopPropagation()}>
                                   <div className="flex flex-nowrap items-center justify-center gap-1">
                                     {/* Eye icon */}
                                     <button onClick={() => setDetailReminder(r)} title="Lihat Detail"
