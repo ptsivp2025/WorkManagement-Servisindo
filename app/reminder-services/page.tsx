@@ -455,16 +455,6 @@ function MiniCalendar({ reminders, calendarMonth, setCalendarMonth, selectedCalD
     </div>
   );
 }
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected day events (new dark calendar already has this above) */}
-    </div>
-  );
-}
 
 // ─── Loading screen ────────────────────────────────────────────────────────────
 
