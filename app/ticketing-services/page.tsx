@@ -1305,15 +1305,16 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
           </div>
         )}
 
-        {/* Ticket Detail Side Panel — Workflow di kiri */}
+        {/* Ticket Detail Side Panel — Right sidebar style */}
         {showDetail && selectedTicket && (
           <div className="fixed inset-0 z-[9000] flex">
             <div className="flex-1 bg-black/40" onClick={() => { setShowDetail(false); setShowUpdateForm(false); }} />
-            {/* Outer container — side-by-side: workflow + detail (+ optional update form) */}
-            <div className={`flex overflow-hidden shadow-2xl transition-all duration-200 ${showUpdateForm ? 'w-[860px]' : 'w-[580px]'}`} style={{ borderLeft: '3px solid #dc2626', maxHeight: '100vh' }}>
+            {/* Right panel container — workflow + detail side by side */}
+            <div className={`flex overflow-hidden shadow-2xl transition-all duration-200 ${showUpdateForm ? 'w-[860px]' : 'w-[560px]'}`}
+              style={{ borderLeft: '2px solid #dc2626', maxHeight: '100vh', animation: 'slide-in-right 0.22s ease-out' }}>
 
               {/* LEFT: Workflow Progress Column */}
-              <div className="w-[120px] flex-shrink-0 bg-slate-50 border-r border-slate-100 flex flex-col overflow-hidden">
+              <div className="w-[110px] flex-shrink-0 bg-slate-50 border-r border-slate-100 flex flex-col overflow-hidden">
                 <div className="px-2 py-3 border-b border-slate-100 flex-shrink-0" style={{ background: 'linear-gradient(180deg,#dc2626,#991b1b)' }}>
                   <p className="text-[9px] font-black text-white uppercase tracking-widest text-center">Workflow</p>
                   <p className="text-[8px] text-white/60 text-center mt-0.5">Services</p>
@@ -1343,115 +1344,178 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                 </div>
               </div>
 
-              {/* CENTER: Detail info */}
+              {/* CENTER: Detail panel */}
               <div className="flex-1 bg-white flex flex-col overflow-hidden min-w-0">
-                {/* Panel header */}
-                <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100 flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap gap-1.5 mb-1">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/20 text-white">{selectedTicket.current_team || 'Team Services'}</span>
-                      {selectedTicket.services_status && (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${SVC_STATUS_COLORS[selectedTicket.services_status] || 'bg-white text-red-700 border-red-200'}`}>{selectedTicket.services_status}</span>
-                      )}
+
+                {/* Panel top header */}
+                <div className="px-4 py-3 flex items-center justify-between flex-shrink-0 border-b border-slate-100">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
                     </div>
-                    <h3 className="font-black text-base text-white truncate">{selectedTicket.project_name}</h3>
-                    {selectedTicket.address && <p className="text-white/70 text-xs mt-0.5 truncate">📍 {selectedTicket.address}</p>}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-500 leading-none">Detail Ticket</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">{selectedTicket.current_team || 'Team Services'}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     {(currentUser?.role === 'admin' || currentUser?.role === 'team') && selectedTicket.services_status !== 'Solved' && selectedTicket.services_status !== 'Waiting Approval' && (
                       <button onClick={() => setShowUpdateForm(v => !v)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white hover:bg-white/30 transition-all">
-                        {showUpdateForm ? 'Tutup' : '✍️ Update'}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                        style={showUpdateForm ? { background: '#f1f5f9', color: '#475569', borderColor: '#e2e8f0' } : { background: 'rgba(220,38,38,0.07)', color: '#dc2626', borderColor: 'rgba(220,38,38,0.2)' }}>
+                        {showUpdateForm ? 'Tutup' : 'Update'}
                       </button>
                     )}
                     <button onClick={() => { setShowDetail(false); setShowUpdateForm(false); }}
-                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                  {/* Info grid — termasuk customer/user dari PTS */}
-                  <div className="grid grid-cols-2 gap-x-6">
-                    <div>
-                      <InfoLine label="Handler" value={selectedTicket.assign_name} />
-                      <InfoLine label="Issue" value={selectedTicket.issue_case} />
-                      {selectedTicket.product && <InfoLine label="Product" value={selectedTicket.product} />}
-                      {selectedTicket.sn_unit && <InfoLine label="SN Unit" value={selectedTicket.sn_unit} />}
-                    </div>
-                    <div>
-                      {/* Customer / User phone — dari PTS ticket */}
-                      {selectedTicket.customer_phone && <InfoLine label="Customer / User" value={selectedTicket.customer_phone} />}
-                      {selectedTicket.sales_name && <InfoLine label="Sales" value={`${selectedTicket.sales_name}${selectedTicket.sales_division ? ` (${selectedTicket.sales_division})` : ''}`} />}
-                      <InfoLine label="Dibuat" value={formatDateTime(selectedTicket.created_at)} />
-                      {selectedTicket.created_by && <InfoLine label="Created By" value={`@${selectedTicket.created_by}`} />}
+                {/* Status row */}
+                <div className="px-4 py-2 flex items-center gap-2 flex-shrink-0 border-b border-slate-100">
+                  {selectedTicket.services_status && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${SVC_STATUS_COLORS[selectedTicket.services_status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                      {selectedTicket.services_status}
+                    </span>
+                  )}
+                </div>
+
+                {/* Project name + address */}
+                <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
+                  <h3 className="font-black text-base text-slate-800 leading-snug">{selectedTicket.project_name}</h3>
+                  {selectedTicket.address && (
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      {selectedTicket.address}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto">
+                  {/* Info rows */}
+                  <div className="border-b border-slate-100">
+                    <div className="px-4 py-3 divide-y divide-slate-50">
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Handler</p><p className="text-sm font-semibold text-slate-800">{selectedTicket.assign_name || '—'}</p></div>
+                      </div>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Issue</p><p className="text-sm font-semibold text-slate-800">{selectedTicket.issue_case}</p></div>
+                      </div>
+                      {selectedTicket.description && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Deskripsi</p><p className="text-sm text-slate-700 leading-relaxed">{selectedTicket.description}</p></div>
+                        </div>
+                      )}
+                      {selectedTicket.product && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Product</p><p className="text-sm font-semibold text-slate-800">{selectedTicket.product}</p></div>
+                        </div>
+                      )}
+                      {selectedTicket.sn_unit && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">SN Unit</p><p className="text-sm font-mono text-slate-800">{selectedTicket.sn_unit}</p></div>
+                        </div>
+                      )}
+                      {selectedTicket.customer_phone && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Customer / User</p><p className="text-sm font-semibold text-slate-800">{selectedTicket.customer_phone}</p></div>
+                        </div>
+                      )}
+                      {selectedTicket.sales_name && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Sales</p>
+                            <p className="text-sm font-semibold text-slate-800">{selectedTicket.sales_name}</p>
+                            {selectedTicket.sales_division && <p className="text-[11px] text-slate-400">{selectedTicket.sales_division}</p>}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Dibuat</p><p className="text-sm text-slate-700">{formatDateTime(selectedTicket.created_at)}</p></div>
+                      </div>
+                      {selectedTicket.created_by && (
+                        <div className="flex items-start gap-3 py-2.5">
+                          <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                          <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Created By</p><p className="text-sm text-slate-700">@{selectedTicket.created_by}</p></div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {selectedTicket.description && <InfoLine label="Deskripsi" value={selectedTicket.description} />}
 
-                  {/* Foto ticket — tampilkan dari PTS juga */}
+                  {/* Foto */}
                   {selectedTicket.photo_url && (
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">📸 Foto Ticket</p>
-                      <img src={selectedTicket.photo_url} alt="foto" className="w-full max-h-36 object-cover rounded-xl border cursor-pointer hover:opacity-90"
-                        onClick={() => window.open(selectedTicket.photo_url!, '_blank')} />
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Foto Ticket</p>
+                      <img src={selectedTicket.photo_url} alt="foto" className="w-full max-h-36 object-cover rounded-xl border cursor-pointer hover:opacity-90" onClick={() => window.open(selectedTicket.photo_url!, '_blank')} />
                     </div>
                   )}
 
                   {/* Activity Logs */}
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">📋 Activity Log ({activityLogs.length})</p>
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Activity Log ({activityLogs.length})</p>
                     <div className="space-y-2">
                       {logsLoading ? (
                         <div className="flex justify-center py-4"><div className="w-6 h-6 border-3 border-slate-200 border-t-red-500 rounded-full animate-spin"/></div>
                       ) : activityLogs.length === 0 ? (
-                        <p className="text-xs text-gray-400 text-center py-3">Belum ada aktivitas</p>
+                        <p className="text-xs text-slate-400 text-center py-3">Belum ada aktivitas</p>
                       ) : activityLogs.map(log => (
-                        <div key={log.id} className="rounded-lg p-2.5 border border-gray-100 bg-gray-50/80">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-gray-800">{log.handler_name}</span>
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${log.team_type === 'Team Services' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{log.team_type}</span>
+                        <div key={log.id} className="rounded-xl p-3 border border-slate-100 bg-slate-50/60">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-800">{log.handler_name}</span>
+                              <span className="text-[9px] font-semibold text-slate-500">{log.team_type}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${SVC_STATUS_COLORS[log.new_status] || 'bg-gray-100 text-gray-600 border-gray-300'}`}>{log.new_status}</span>
-                              <span className="text-[9px] text-gray-400">{formatDateTime(log.created_at)}</span>
+                              <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${SVC_STATUS_COLORS[log.new_status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>{log.new_status}</span>
+                              <span className="text-[9px] text-slate-400">{formatDateTime(log.created_at)}</span>
                             </div>
                           </div>
-                          {log.action_taken && <p className="text-[10px] text-blue-700 font-semibold">🔧 {log.action_taken}</p>}
-                          {log.notes && <p className="text-xs text-gray-600">{log.notes}</p>}
+                          {log.action_taken && <p className="text-[11px] text-blue-700 font-semibold">{log.action_taken}</p>}
+                          {log.notes && <p className="text-xs text-slate-600 mt-0.5">{log.notes}</p>}
                           {log.photo_url && <img src={log.photo_url} alt="log" className="mt-1.5 max-h-24 rounded-lg border cursor-pointer" onClick={() => window.open(log.photo_url!, '_blank')} />}
-                          {log.file_url && <a href={log.file_url} download className="inline-block mt-1 text-[10px] font-bold text-blue-600 hover:underline">📄 {log.file_name || 'Download'}</a>}
+                          {log.file_url && <a href={log.file_url} download className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-blue-600 hover:underline"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>{log.file_name || 'Download'}</a>}
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Footer actions — Print + Update + Approve + Close */}
-                <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2 bg-gray-50/50 flex-shrink-0">
+                {/* Footer actions */}
+                <div className="px-4 py-3 border-t border-slate-100 flex flex-wrap gap-2 flex-shrink-0">
                   <button onClick={() => exportToPDF(selectedTicket)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>🖨️ Print PDF</button>
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'team') && selectedTicket.services_status !== 'Solved' && selectedTicket.services_status !== 'Waiting Approval' && (
-                    <button onClick={() => setShowUpdateForm(!showUpdateForm)}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${showUpdateForm ? 'bg-gray-200 text-gray-700' : 'text-white'}`}
-                      style={showUpdateForm ? {} : { background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
-                      {showUpdateForm ? '✕ Tutup' : '➕ Update Status'}
-                    </button>
-                  )}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
+                    style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Print PDF
+                  </button>
                   {currentUser?.role === 'admin' && selectedTicket.services_status === 'Waiting Approval' && (
                     <button onClick={() => { setApprovalTicket(selectedTicket); setApprovalAssignTo(''); setShowApprovalModal(true); }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>✅ Approve</button>
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
+                      style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                      Approve
+                    </button>
                   )}
                   {currentUser?.role === 'admin' && (
                     <button onClick={() => { setDeleteTarget(selectedTicket); setDeleteConfirmText(''); setShowDeleteModal(true); setShowDetail(false); }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-red-200 text-red-600 hover:bg-red-50">🗑️ Hapus</button>
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Hapus
+                    </button>
                   )}
                   <button onClick={() => { setShowDetail(false); setShowUpdateForm(false); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-gray-200 text-gray-600 bg-white">✕ Close</button>
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:bg-slate-50 ml-auto">
+                    Tutup
+                  </button>
                 </div>
               </div>
 
@@ -1872,7 +1936,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                 )}
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr style={{ background: 'rgba(248,250,252,0.95)', borderBottom: '2px solid rgba(220,38,38,0.15)' }}>
+                    <tr style={{ background: 'linear-gradient(90deg,rgba(220,38,38,0.06),rgba(220,38,38,0.02))', borderBottom: '2px solid rgba(220,38,38,0.15)' }}>
                       {selectMode && currentUser?.role === 'admin' && (
                         <th className="px-3 py-3 w-10 border border-slate-100">
                           <input type="checkbox"
@@ -1884,17 +1948,18 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                         </th>
                       )}
                       {['NO', 'NAMA PROJECT', 'ISSUE', 'PRODUCT', 'SN UNIT', 'SALES', 'HANDLER', 'STATUS', 'TGL', 'AKSI'].map(h => (
-                        <th key={h} className="px-3 py-3 text-left text-[10px] font-bold tracking-widest uppercase text-slate-400 border border-slate-100">{h}</th>
+                        <th key={h} className="px-3 py-3 text-left text-[10px] font-black tracking-widest uppercase text-slate-400 border-r border-red-50/80 last:border-r-0">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTickets.map((t, idx) => (
                       <tr key={t.id}
-                        className={`hover:bg-red-50/40 cursor-pointer transition-colors group ${selectedIds.has(t.id) ? 'bg-red-50' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                        className={`hover:bg-red-50/40 cursor-pointer transition-colors group border-b ${selectedIds.has(t.id) ? 'bg-red-50' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                        style={{ borderColor: 'rgba(0,0,0,0.05)' }}
                         onClick={() => openTicket(t)}>
                         {selectMode && currentUser?.role === 'admin' && (
-                          <td className="px-3 py-3 border border-slate-100" onClick={e => e.stopPropagation()}>
+                          <td className="px-3 py-3 border-r border-slate-100/50" onClick={e => e.stopPropagation()}>
                             <input type="checkbox" checked={selectedIds.has(t.id)}
                               onChange={() => setSelectedIds(prev => { const n = new Set(prev); n.has(t.id) ? n.delete(t.id) : n.add(t.id); return n; })}
                               className="w-4 h-4 rounded accent-red-600 cursor-pointer"/>
@@ -1903,50 +1968,50 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                         {/* NO */}
                         <td className="px-3 py-3 text-slate-400 font-semibold text-xs border border-slate-100 text-center">{idx + 1}</td>
                         {/* PROJECT */}
-                        <td className="px-3 py-3 border border-slate-100 max-w-[160px]">
+                        <td className="px-3 py-3 border-r border-slate-100/50 max-w-[160px]">
                           <p className="font-bold text-slate-800 group-hover:text-red-700 transition-colors text-sm leading-tight line-clamp-2">{t.project_name}</p>
                           {t.address && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">📍 {t.address}</p>}
                         </td>
                         {/* ISSUE */}
-                        <td className="px-3 py-3 border border-slate-100 max-w-[140px]">
+                        <td className="px-3 py-3 border-r border-slate-100/50 max-w-[140px]">
                           <p className="text-sm font-medium text-slate-600 line-clamp-2">{t.issue_case}</p>
                           {t.description && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{t.description}</p>}
                         </td>
                         {/* PRODUCT */}
-                        <td className="px-3 py-3 border border-slate-100">
+                        <td className="px-3 py-3 border-r border-slate-100/50">
                           {t.product
                             ? <span className="inline-block px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">📦 {t.product}</span>
                             : <span className="text-slate-300 text-xs">—</span>}
                         </td>
                         {/* SN UNIT */}
-                        <td className="px-3 py-3 border border-slate-100">
+                        <td className="px-3 py-3 border-r border-slate-100/50">
                           {t.sn_unit
                             ? <span className="text-xs font-mono text-slate-600">{t.sn_unit}</span>
                             : <span className="text-slate-300 text-xs">—</span>}
                         </td>
                         {/* SALES */}
-                        <td className="px-3 py-3 border border-slate-100">
+                        <td className="px-3 py-3 border-r border-slate-100/50">
                           <p className="font-semibold text-slate-700 text-sm line-clamp-1">{t.sales_name || '—'}</p>
                           {t.sales_division && <p className="text-[10px] text-purple-500 font-semibold">{t.sales_division}</p>}
                         </td>
                         {/* HANDLER */}
-                        <td className="px-3 py-3 border border-slate-100">
+                        <td className="px-3 py-3 border-r border-slate-100/50">
                           <p className="font-semibold text-slate-700 text-sm line-clamp-1">{t.assign_name || '—'}</p>
                           <p className="text-[10px] text-red-400 font-medium">Services</p>
                         </td>
                         {/* STATUS */}
-                        <td className="px-3 py-3 border border-slate-100">
+                        <td className="px-3 py-3 border-r border-slate-100/50">
                           {t.services_status
                             ? <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${STATUS_COLORS[t.services_status] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>{t.services_status}</span>
                             : <span className="text-slate-300 text-xs">—</span>}
                         </td>
                         {/* TANGGAL */}
-                        <td className="px-3 py-3 border border-slate-100 whitespace-nowrap">
+                        <td className="px-3 py-3 border-r border-slate-100/50 whitespace-nowrap">
                           <p className="text-xs text-slate-500">{t.date || formatDateTime(t.created_at).split(',')[0]}</p>
                           <p className="text-[10px] text-slate-400">{formatDateTime(t.created_at).split(',')[1]?.trim()}</p>
                         </td>
                         {/* AKSI */}
-                        <td className="px-3 py-3 border border-slate-100" onClick={e => e.stopPropagation()}>
+                        <td className="px-3 py-3 border-r border-slate-100/50" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             <button onClick={() => openTicket(t)} title="View" className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -1983,6 +2048,7 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
 
       <style jsx>{`
         @keyframes scale-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slide-in-right { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
     </div>
   );
