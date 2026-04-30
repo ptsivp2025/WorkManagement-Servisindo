@@ -243,14 +243,13 @@ export default function ServicesDashboard() {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'ticketing' | 'reminder'>('ticketing');
   const [iframeKey, setIframeKey] = useState(0);
   const [notifs, setNotifs] = useState<NotifItem[]>([]);
 
   // Register form
   const [showRegister, setShowRegister] = useState(false);
-  const [registerForm, setRegisterForm] = useState({ full_name: '', username: '', password: '', role: 'team', phone_number: '' });
+  const [registerForm, setRegisterForm] = useState({ full_name: '', username: '', password: '', role: 'team', phone_number: '', sales_division: '' });
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [registerError, setRegisterError] = useState('');
@@ -319,7 +318,7 @@ export default function ServicesDashboard() {
   };
 
   const handleRegister = async () => {
-    const { full_name, username, password, role, phone_number } = registerForm;
+    const { full_name, username, password, role, phone_number, sales_division } = registerForm;
     if (!full_name.trim() || !username.trim() || !password.trim()) { setRegisterError('Nama, username, dan password wajib diisi!'); return; }
     setRegisterLoading(true); setRegisterError('');
     try {
@@ -330,6 +329,7 @@ export default function ServicesDashboard() {
       const { error } = await supabase.from('users').insert([{
         full_name: full_name.trim(), username: username.trim(), password,
         role, phone_number: phone_number.trim() || null, approved: false,
+        sales_division: sales_division || null,
       }]);
       if (error) { setRegisterError('Gagal mendaftar: ' + error.message); setRegisterLoading(false); return; }
       setRegisterSuccess(true);
@@ -412,7 +412,7 @@ export default function ServicesDashboard() {
               <div className="text-5xl mb-4">⏳</div>
               <h2 className="text-xl font-black text-slate-800 mb-2">Pendaftaran Terkirim!</h2>
               <p className="text-slate-500 text-sm mb-6 leading-relaxed">Akun Anda sedang menunggu persetujuan dari Admin. Setelah disetujui, Anda dapat login ke portal.</p>
-              <button onClick={() => { setShowRegister(false); setRegisterSuccess(false); setRegisterForm({ full_name: '', username: '', password: '', role: 'team', phone_number: '' }); }}
+              <button onClick={() => { setShowRegister(false); setRegisterSuccess(false); setRegisterForm({ full_name: '', username: '', password: '', role: 'team', phone_number: '', sales_division: '' }); }}
                 className="px-6 py-3 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
                 Kembali ke Login
               </button>
@@ -446,12 +446,19 @@ export default function ServicesDashboard() {
                   <label className="block text-xs font-bold mb-1.5 text-slate-500 tracking-widest uppercase">Role *</label>
                   <select value={registerForm.role} onChange={e => setRegisterForm({ ...registerForm, role: e.target.value })}
                     className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium bg-white text-sm">
-                    <option value="team">Team — Akses Reminder &amp; Troubleshooting</option>
-                    <option value="guest">Guest — Akses Ticketing saja</option>
+                    <option value="team">Team</option>
+                    <option value="guest">Guest</option>
                   </select>
-                  <p className="text-[10px] text-slate-400 mt-1 px-1">
-                    {registerForm.role === 'guest' ? '👤 Guest hanya dapat melihat dan submit ticket troubleshooting.' : '👷 Team mendapatkan akses penuh ke Reminder Schedule dan Ticket Troubleshooting.'}
-                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-slate-500 tracking-widest uppercase">Sales Division</label>
+                  <select value={registerForm.sales_division} onChange={e => setRegisterForm({ ...registerForm, sales_division: e.target.value })}
+                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium bg-white text-sm">
+                    <option value="">— Pilih Sales Division —</option>
+                    {['IVP','MLDS','HAVS','Enterprise','DEC','ICS','POJ','VOJ','LOCOS','VISIONMEDIA','UMP','BISOL','KIMS','IDC','IOCMEDAN','IOCPekanbaru','IOCBandung','IOCJATENG','MVISEMARANG','POSSurabaya','IOCSurabaya','IOCBali','SGP','OSS'].map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1.5 text-slate-500 tracking-widest uppercase">No. HP</label>
@@ -522,16 +529,15 @@ export default function ServicesDashboard() {
     );
   }
 
-  // ── TEAM / ADMIN LAYOUT — sidebar + 2 menus ─────────────────────────────────
+  // ── TEAM / ADMIN LAYOUT — header nav (no sidebar) ────────────────────────────
   const menuItems = [
-    { key: 'ticketing' as const, label: 'Ticket Troubleshooting', icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>), iframeUrl: '/ticketing-services', accent: '#dc2626', bg: 'rgba(220,38,38,0.09)', border: 'rgba(220,38,38,0.28)' },
-    { key: 'reminder' as const, label: 'Reminder Schedule', icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>), iframeUrl: '/reminder-services', accent: '#b45309', bg: 'rgba(180,83,9,0.09)', border: 'rgba(180,83,9,0.28)' },
+    { key: 'ticketing' as const, label: 'Ticket Troubleshooting', icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>), iframeUrl: '/ticketing-services', accent: '#dc2626', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.35)' },
+    { key: 'reminder' as const, label: 'Reminder Schedule', icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>), iframeUrl: '/reminder-services', accent: '#b45309', bg: 'rgba(180,83,9,0.10)', border: 'rgba(180,83,9,0.35)' },
   ];
 
   const activeItem = menuItems.find(m => m.key === activeMenu)!;
   const ticketNotifCount = notifs.filter(n => n.type === 'ticket').length;
   const reminderNotifCount = notifs.filter(n => n.type === 'reminder').length;
-  const pendingApprovals = 0; // fetched in AccountSettingsModal
 
   return (
     <div className="flex flex-col h-screen overflow-hidden"
@@ -540,33 +546,53 @@ export default function ServicesDashboard() {
       {showSettings && <AccountSettingsModal onClose={() => setShowSettings(false)} />}
 
       {/* ── HEADER ── */}
-      <header className="relative z-50 flex-shrink-0 bg-white/90 backdrop-blur-md shadow-md" style={{ borderBottom: '2.5px solid #dc2626' }}>
-        <div className="w-full px-4 py-3 flex items-center justify-between gap-4">
-          {/* Logo + brand */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <img src="/logo-servisindo.png" alt="Servisindo" style={{ height: '34px', width: 'auto', objectFit: 'contain' }} />
+      <header className="relative z-50 flex-shrink-0 bg-white/95 backdrop-blur-md shadow-md" style={{ borderBottom: '2.5px solid #dc2626' }}>
+        <div className="w-full px-5 py-0 flex items-center gap-4" style={{ minHeight: 58 }}>
+          {/* Logo + Brand */}
+          <div className="flex items-center gap-3 flex-shrink-0 py-2">
+            <img src="/logo-servisindo.png" alt="Servisindo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
             <div className="hidden md:block border-l border-slate-200 pl-3">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-red-600 leading-none">Work Management</p>
-              <p className="text-xs font-semibold text-slate-500 mt-0.5">Multimedia Service Center</p>
+              <p className="text-base font-black tracking-tight text-slate-800 leading-tight">Work Management</p>
+              <p className="text-xs font-bold text-red-600 tracking-widest uppercase leading-none">Multimedia Service Center</p>
             </div>
           </div>
 
-          <div className="flex-1" />
+          {/* ── NAV MENU (Team/Admin only) — center ── */}
+          <nav className="flex items-center gap-1 flex-1 justify-center">
+            {menuItems.map(item => {
+              const isActive = activeMenu === item.key;
+              const notifCount = item.key === 'ticketing' ? ticketNotifCount : reminderNotifCount;
+              return (
+                <button key={item.key} onClick={() => handleNavClick(item.key)}
+                  className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
+                  style={isActive
+                    ? { background: item.bg, border: `1.5px solid ${item.border}`, color: item.accent }
+                    : { background: 'transparent', border: '1.5px solid transparent', color: '#475569' }}>
+                  <span className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: isActive ? `${item.accent}18` : 'rgba(0,0,0,0.05)', color: isActive ? item.accent : '#64748b' }}>
+                    {item.icon}
+                  </span>
+                  <span className="tracking-wide">{item.label}</span>
+                  {notifCount > 0 && (
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white" style={{ background: item.accent }}>
+                      {notifCount > 9 ? '9+' : notifCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          {/* RIGHT: Bell (only visible on ticketing page) + user + buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Bell only shows when on ticketing menu */}
-            {activeMenu === 'ticketing' && (
-              <NotifBell items={notifs} onTicketClick={() => handleNavClick('ticketing')} onReminderClick={() => handleNavClick('reminder')} />
-            )}
+          {/* RIGHT: Bell + user + settings + logout */}
+          <div className="flex items-center gap-2 flex-shrink-0 py-2">
+            <NotifBell items={notifs} onTicketClick={() => handleNavClick('ticketing')} onReminderClick={() => handleNavClick('reminder')} />
 
-            {/* User info — no name, just avatar + role badge */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80">
               <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
                 {currentUser?.full_name?.charAt(0)?.toUpperCase() ?? 'U'}
               </div>
-              {/* Name hidden — shown in Dashboard only */}
-              <p className="text-[9px] font-bold tracking-widest uppercase text-red-600 hidden sm:inline">{currentUser?.role}</p>
+              <span className="text-sm font-semibold text-slate-700 hidden sm:inline">{currentUser?.full_name}</span>
+              <span className="text-[9px] font-bold tracking-widest uppercase text-red-600 hidden sm:inline">{currentUser?.role}</span>
             </div>
 
             {currentUser?.role === 'admin' && (
@@ -588,114 +614,13 @@ export default function ServicesDashboard() {
         </div>
       </header>
 
-      {/* ── BODY: SIDEBAR + IFRAME ── */}
-      <div className="relative z-10 flex flex-1 overflow-hidden">
+      {/* ── BODY: IFRAME only (no sidebar) ── */}
+      <main className="relative z-10 flex-1 overflow-hidden">
+        <iframe key={iframeKey} src={activeItem.iframeUrl} className="w-full h-full border-0" title={activeItem.label} />
+      </main>
 
-        {/* SIDEBAR */}
-        <aside className={`relative flex flex-col flex-shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'w-[68px]' : 'w-[236px]'}`}
-          style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', boxShadow: '3px 0 18px rgba(0,0,0,0.07)', borderRight: '1px solid rgba(0,0,0,0.06)' }}>
-          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg,transparent,#dc2626,transparent)' }} />
-
-          {/* Sidebar header */}
-          <div className={`flex items-center border-b px-3 py-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`} style={{ borderColor: 'rgba(0,0,0,0.07)' }}>
-            {!sidebarCollapsed && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-red-600 leading-none">Servisindo</p>
-                  <p className="font-bold text-sm text-slate-800 leading-tight">SVC Portal</p>
-                </div>
-              </div>
-            )}
-            {sidebarCollapsed && (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-              </div>
-            )}
-            {!sidebarCollapsed && (
-              <button onClick={() => setSidebarCollapsed(true)} className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M18 19l-7-7 7-7" /></svg>
-              </button>
-            )}
-          </div>
-
-          {/* User info in sidebar when expanded */}
-          {!sidebarCollapsed && currentUser && (
-            <div className="px-3 py-3 border-b" style={{ borderColor: 'rgba(0,0,0,0.07)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                  {currentUser.full_name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{currentUser.full_name}</p>
-                  <p className="text-[9px] font-bold tracking-widest uppercase text-red-600">{currentUser.role}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Nav items */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" style={{ scrollbarWidth: 'none' }}>
-            {!sidebarCollapsed && <p className="px-1 mb-3 text-[10px] font-bold tracking-widest uppercase text-slate-400">Menu Utama</p>}
-            {menuItems.map(item => {
-              const isActive = activeMenu === item.key;
-              const notifCount = item.key === 'ticketing' ? ticketNotifCount : reminderNotifCount;
-              return (
-                <div key={item.key} className="group relative">
-                  <button onClick={() => handleNavClick(item.key)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
-                    style={isActive
-                      ? { background: item.bg, border: `1px solid ${item.border}`, color: item.accent }
-                      : { background: 'transparent', border: '1px solid transparent', color: '#334155' }}>
-                    <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: isActive ? `${item.accent}18` : 'rgba(0,0,0,0.06)', color: isActive ? item.accent : '#64748b' }}>
-                      {item.icon}
-                    </span>
-                    {!sidebarCollapsed && (
-                      <>
-                        <span className="flex-1 text-left truncate tracking-wide">{item.label}</span>
-                        {notifCount > 0 && <span className="min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white" style={{ background: item.accent }}>{notifCount > 9 ? '9+' : notifCount}</span>}
-                        {isActive && notifCount === 0 && <div className="w-1.5 h-1.5 rounded-full" style={{ background: item.accent }} />}
-                      </>
-                    )}
-                    {sidebarCollapsed && notifCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black text-white" style={{ background: item.accent }}>{notifCount}</span>
-                    )}
-                  </button>
-                  {sidebarCollapsed && (
-                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      <div className="rounded-xl px-3 py-2 shadow-lg" style={{ background: '#f8fafc', border: `1px solid ${item.border}`, boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
-                        <p className="text-xs font-bold" style={{ color: item.accent }}>{item.label}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-
-          {/* Expand button when collapsed */}
-          <div className="p-3" style={{ borderTop: '1px solid rgba(0,0,0,0.07)' }}>
-            {sidebarCollapsed ? (
-              <button onClick={() => setSidebarCollapsed(false)} className="w-full flex justify-center p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-all" style={{ background: 'rgba(0,0,0,0.04)' }}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M6 5l7 7-7 7" /></svg>
-              </button>
-            ) : (
-              <div className="text-center"><p className="text-[10px] text-slate-300 font-medium">© 2026 Servisindo</p></div>
-            )}
-          </div>
-        </aside>
-
-        {/* MAIN: iframe */}
-        <main className="flex-1 overflow-hidden">
-          <iframe key={iframeKey} src={activeItem.iframeUrl} className="w-full h-full border-0" title={activeItem.label} />
-        </main>
-      </div>
-
-      {/* ── FOOTER — full width, z-50 (front of layer, mentok kiri) ── */}
-      <div className="relative z-50 flex-shrink-0 bg-white border-t border-slate-200" style={{ marginLeft: 0 }}>
+      {/* ── FOOTER ── */}
+      <div className="relative z-50 flex-shrink-0 bg-white border-t border-slate-200">
         <p className="text-slate-400 text-xs font-medium text-center py-3 tracking-wide">
           © 2026 Servisindo Multimedia Service Center — Work Management Support System
         </p>
