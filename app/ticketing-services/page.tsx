@@ -147,171 +147,106 @@ function formatDateTime(s: string) {
   return `${pad(jkt.getUTCDate())}/${pad(jkt.getUTCMonth()+1)}/${jkt.getUTCFullYear()}, ${pad(jkt.getUTCHours())}:${pad(jkt.getUTCMinutes())}`;
 }
 
-// ── Donut Chart (Services Status) ─────────────────────────────────────────────
-function StatusDonutCard({ data, total, onSliceClick }: { data: { name: string; value: number; color: string }[]; total: number; onSliceClick: (name: string) => void }) {
-  const [hov, setHov] = useState<number | null>(null);
-  if (total === 0) return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">📊 Status</p>
-      <p className="text-slate-400 text-sm text-center py-4">Belum ada data</p>
-    </div>
-  );
-  let cum = -Math.PI / 2;
-  const cx = 60, cy = 60, r = 50, ir = 28;
-  const slices = data.map((d, i) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    if (data.length === 1) return { ...d, path: '', isCircle: true, i };
-    const x1 = cx + r * Math.cos(cum), y1 = cy + r * Math.sin(cum);
-    const x2 = cx + r * Math.cos(cum + angle), y2 = cy + r * Math.sin(cum + angle);
-    const xi1 = cx + ir * Math.cos(cum), yi1 = cy + ir * Math.sin(cum);
-    const xi2 = cx + ir * Math.cos(cum + angle), yi2 = cy + ir * Math.sin(cum + angle);
-    const large = angle > Math.PI ? 1 : 0;
-    const path = `M${xi1} ${yi1} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${ir} ${ir} 0 ${large} 0 ${xi1} ${yi1}Z`;
-    cum += angle;
-    return { ...d, path, isCircle: false, i };
-  });
-  return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">📊 Services Status</p>
-      <div className="flex items-center gap-3">
-        <svg width="120" height="120" viewBox="0 0 120 120" className="flex-shrink-0">
-          {slices.map(s => s.isCircle
-            ? <g key={s.i} onClick={() => onSliceClick(s.name)} style={{ cursor: 'pointer' }}>
-                <circle cx={cx} cy={cy} r={r} fill={s.color} opacity={hov === null || hov === s.i ? 1 : 0.45} />
-                <circle cx={cx} cy={cy} r={ir} fill="white" />
-              </g>
-            : <path key={s.i} d={s.path} fill={s.color} opacity={hov === null || hov === s.i ? 1 : 0.45}
-                style={{ cursor: 'pointer', transition: 'opacity 0.15s', filter: hov === s.i ? `drop-shadow(0 0 4px ${s.color})` : 'none' }}
-                onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)} onClick={() => onSliceClick(s.name)} />
-          )}
-          <text x="60" y="57" textAnchor="middle" fontSize="16" fontWeight="800" fill="#1e293b">{total}</text>
-          <text x="60" y="70" textAnchor="middle" fontSize="7" fill="#94a3b8" fontWeight="600">TOTAL</text>
-        </svg>
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0 max-h-[120px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-          {slices.map(s => (
-            <div key={s.i} className="flex items-center gap-1.5 cursor-pointer rounded-lg px-1.5 py-0.5 transition-all"
-              style={{ background: hov === s.i ? `${s.color}18` : 'transparent' }}
-              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)} onClick={() => onSliceClick(s.name)}>
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-              <span className="text-[10px] font-semibold text-slate-600 truncate flex-1">{s.name}</span>
-              <span className="text-[10px] font-bold" style={{ color: s.color }}>{s.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Handler Donut (Team Services only) ────────────────────────────────────────
-function HandlerDonutCard({ data, total, onSliceClick, activeHandler }: { data: { name: string; value: number; color: string }[]; total: number; onSliceClick: (n: string) => void; activeHandler: string | null }) {
-  const [hov, setHov] = useState<number | null>(null);
-  if (total === 0) return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">👥 Handler</p>
-      <p className="text-slate-400 text-sm text-center py-4">Belum ada data</p>
-    </div>
-  );
-  let cum = -Math.PI / 2;
-  const cx = 60, cy = 60, r = 50, ir = 28;
-  const slices = data.map((d, i) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    if (data.length === 1) return { ...d, path: '', isCircle: true, i };
-    const x1 = cx + r * Math.cos(cum), y1 = cy + r * Math.sin(cum);
-    const x2 = cx + r * Math.cos(cum + angle), y2 = cy + r * Math.sin(cum + angle);
-    const xi1 = cx + ir * Math.cos(cum), yi1 = cy + ir * Math.sin(cum);
-    const xi2 = cx + ir * Math.cos(cum + angle), yi2 = cy + ir * Math.sin(cum + angle);
-    const large = angle > Math.PI ? 1 : 0;
-    const path = `M${xi1} ${yi1} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${ir} ${ir} 0 ${large} 0 ${xi1} ${yi1}Z`;
-    cum += angle;
-    return { ...d, path, isCircle: false, i };
-  });
-  return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">👥 Team Services Handler</p>
-      <div className="flex items-center gap-3">
-        <svg width="120" height="120" viewBox="0 0 120 120" className="flex-shrink-0">
-          {slices.map(s => s.isCircle
-            ? <g key={s.i} onClick={() => onSliceClick(s.name)} style={{ cursor: 'pointer' }}>
-                <circle cx={cx} cy={cy} r={r} fill={s.color} opacity={hov === null || hov === s.i ? 1 : 0.45} />
-                <circle cx={cx} cy={cy} r={ir} fill="white" />
-              </g>
-            : <path key={s.i} d={s.path} fill={s.color} opacity={hov === null || hov === s.i ? 1 : 0.45}
-                style={{ cursor: 'pointer', transition: 'opacity 0.15s', filter: hov === s.i || activeHandler === s.name ? `drop-shadow(0 0 4px ${s.color})` : 'none' }}
-                onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)} onClick={() => onSliceClick(s.name)} />
-          )}
-          <text x="60" y="57" textAnchor="middle" fontSize="16" fontWeight="800" fill="#1e293b">{total}</text>
-          <text x="60" y="70" textAnchor="middle" fontSize="7" fill="#94a3b8" fontWeight="600">TOTAL</text>
-        </svg>
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0 max-h-[120px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-          {slices.map(s => (
-            <div key={s.i} className="flex items-center gap-1.5 cursor-pointer rounded-lg px-1.5 py-0.5 transition-all"
-              style={{ background: hov === s.i || activeHandler === s.name ? `${s.color}20` : 'transparent', outline: activeHandler === s.name ? `1px solid ${s.color}` : 'none' }}
-              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)} onClick={() => onSliceClick(s.name)}>
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-              <span className="text-[10px] font-semibold text-slate-600 truncate flex-1">{s.name}</span>
-              <span className="text-[10px] font-bold" style={{ color: s.color }}>{s.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Mini Donut Chart (generic — Product, Sales Division) ──────────────────────
-function MiniDonutChart({ data, title, emptyMsg }: { data: { name: string; value: number; color: string }[]; title: string; emptyMsg: string }) {
+// ── Unified Donut Chart ────────────────────────────────────────────────────────
+function DonutChart({
+  data, title, activeKey, onSliceClick
+}: {
+  data: { name: string; value: number; color: string }[];
+  title: string;
+  activeKey?: string | null;
+  onSliceClick?: (name: string) => void;
+}) {
   const [hov, setHov] = useState<number | null>(null);
   const total = data.reduce((s, d) => s + d.value, 0);
+
   if (total === 0) return (
     <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{title}</p>
-      <p className="text-slate-400 text-sm text-center py-4">{emptyMsg}</p>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+      <p className="text-slate-300 text-sm text-center py-6">Belum ada data</p>
     </div>
   );
-  const r = 44, cx = 60, cy = 60, stroke = 16;
-  const arcs: { path: string; color: string; value: number; name: string }[] = [];
-  let angle = -Math.PI / 2;
-  data.forEach((d, i) => {
-    const sweep = (d.value / total) * 2 * Math.PI;
-    const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
-    const x2 = cx + r * Math.cos(angle + sweep), y2 = cy + r * Math.sin(angle + sweep);
+
+  const cx = 60, cy = 60, R = 48, ir = 28;
+
+  // Build slices — full circle if only 1 item
+  const slices = data.map((d, i) => {
+    const frac = d.value / total;
+    if (data.length === 1) return { ...d, i, isCircle: true, path: '' };
+    let cum = -Math.PI / 2;
+    data.slice(0, i).forEach(dd => { cum += (dd.value / total) * 2 * Math.PI; });
+    const sweep = frac * 2 * Math.PI;
+    const x1 = cx + R * Math.cos(cum), y1 = cy + R * Math.sin(cum);
+    const x2 = cx + R * Math.cos(cum + sweep), y2 = cy + R * Math.sin(cum + sweep);
+    const xi1 = cx + ir * Math.cos(cum), yi1 = cy + ir * Math.sin(cum);
+    const xi2 = cx + ir * Math.cos(cum + sweep), yi2 = cy + ir * Math.sin(cum + sweep);
     const large = sweep > Math.PI ? 1 : 0;
-    arcs.push({ path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, color: d.color, value: d.value, name: d.name });
-    angle += sweep;
+    const path = `M${xi1} ${yi1} L${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${ir} ${ir} 0 ${large} 0 ${xi1} ${yi1}Z`;
+    return { ...d, i, isCircle: false, path };
   });
-  const hovered = hov !== null ? data[hov] : null;
+
+  const hovered = hov !== null ? data[hov] : activeKey ? data.find(d => d.name === activeKey) ?? null : null;
+
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">{title}</p>
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 relative" style={{ width: 120, height: 120 }}>
-          <svg viewBox="0 0 120 120" style={{ width: 120, height: 120 }}>
-            {arcs.map((arc, i) => (
-              <path key={i} d={arc.path} fill="none" stroke={arc.color}
-                strokeWidth={hov === i ? stroke + 3 : stroke}
-                strokeLinecap="round"
-                style={{ cursor: 'pointer', transition: 'stroke-width 0.15s', filter: hov === i ? `drop-shadow(0 0 4px ${arc.color}80)` : 'none' }}
-                onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)} />
-            ))}
-            <text x={cx} y={cy - 6} textAnchor="middle" className="font-black" style={{ fontSize: 18, fill: '#1e293b', fontWeight: 900 }}>{hovered ? hovered.value : total}</text>
-            <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: 8, fill: '#94a3b8', fontWeight: 600 }}>{hovered ? hovered.name.slice(0, 10) : 'TOTAL'}</text>
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0 space-y-1 max-h-[120px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-          {data.map((d, i) => (
-            <div key={i} className="flex items-center gap-1.5 cursor-pointer rounded px-1 py-0.5 transition-colors hover:bg-slate-50"
-              onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)}>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
-              <span className="text-[10px] font-medium text-slate-600 flex-1 truncate">{d.name}</span>
-              <span className="text-[10px] font-bold text-slate-800">{d.value}</span>
-              <span className="text-[9px] text-slate-400">({((d.value / total) * 100).toFixed(0)}%)</span>
-            </div>
+    <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{title}</p>
+      <div className="flex items-center gap-3">
+        <svg width="120" height="120" viewBox="0 0 120 120" className="flex-shrink-0">
+          {slices.map(s => s.isCircle ? (
+            <g key={s.i} onClick={() => onSliceClick?.(s.name)} style={{ cursor: onSliceClick ? 'pointer' : 'default' }}
+              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}>
+              <circle cx={cx} cy={cy} r={R} fill={s.color}
+                opacity={hov === null || hov === s.i ? 1 : 0.4}
+                style={{ filter: hov === s.i ? `drop-shadow(0 0 6px ${s.color})` : 'none' }} />
+              <circle cx={cx} cy={cy} r={ir} fill="white" />
+            </g>
+          ) : (
+            <path key={s.i} d={s.path} fill={s.color}
+              opacity={hov === null || hov === s.i ? 1 : 0.4}
+              style={{
+                cursor: onSliceClick ? 'pointer' : 'default',
+                transition: 'opacity 0.15s',
+                filter: hov === s.i || activeKey === s.name ? `drop-shadow(0 0 5px ${s.color})` : 'none'
+              }}
+              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}
+              onClick={() => onSliceClick?.(s.name)} />
           ))}
+          <text x={cx} y={cy - 5} textAnchor="middle" fontSize="17" fontWeight="900" fill="#1e293b">
+            {hovered ? hovered.value : total}
+          </text>
+          <text x={cx} y={cy + 9} textAnchor="middle" fontSize="7" fill="#94a3b8" fontWeight="600">
+            {hovered ? hovered.name.slice(0, 9) : 'TOTAL'}
+          </text>
+        </svg>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0 max-h-[110px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          {slices.map(s => {
+            const isActive = activeKey === s.name || hov === s.i;
+            return (
+              <div key={s.i}
+                className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition-all"
+                style={{ background: isActive ? `${s.color}18` : 'transparent', cursor: onSliceClick ? 'pointer' : 'default', outline: activeKey === s.name ? `1px solid ${s.color}` : 'none' }}
+                onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}
+                onClick={() => onSliceClick?.(s.name)}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                <span className="text-[10px] font-semibold text-slate-600 truncate flex-1">{s.name}</span>
+                <span className="text-[10px] font-bold flex-shrink-0" style={{ color: s.color }}>{s.value}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
   );
+}
+
+// Aliases kept for backward compat with call sites
+function StatusDonutCard({ data, total, onSliceClick }: { data: { name: string; value: number; color: string }[]; total: number; onSliceClick: (name: string) => void }) {
+  return <DonutChart data={data} title="📊 Services Status" onSliceClick={onSliceClick} />;
+}
+function HandlerDonutCard({ data, total, onSliceClick, activeHandler }: { data: { name: string; value: number; color: string }[]; total: number; onSliceClick: (n: string) => void; activeHandler: string | null }) {
+  return <DonutChart data={data} title="👥 Handler" activeKey={activeHandler} onSliceClick={onSliceClick} />;
+}
+function MiniDonutChart({ data, title, emptyMsg }: { data: { name: string; value: number; color: string }[]; title: string; emptyMsg: string }) {
+  return <DonutChart data={data} title={title} />;
 }
 
 // ── InfoLine ──────────────────────────────────────────────────────────────────
@@ -1757,7 +1692,8 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                 <button onClick={() => { setApprovalTicket(tickets.find(t => t.services_status === 'Waiting Approval') ?? null); setApprovalAssignTo(''); setShowApprovalModal(true); }}
                   className="relative flex items-center gap-1.5 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all"
                   style={{ background: 'linear-gradient(135deg,#ea580c,#c2410c)', boxShadow: '0 2px 8px rgba(234,88,12,0.35)' }}>
-                  🔧 Ticket Masuk
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                  Ticket Masuk
                   <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{pendingApprovalCount}</span>
                 </button>
               )}
@@ -1768,14 +1704,6 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4"/></svg>
                 New Ticket
               </button>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs">
-                <div className="w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-[10px]"
-                  style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
-                  {currentUser?.full_name?.charAt(0)?.toUpperCase()}
-                </div>
-                <span className="font-semibold text-slate-700 hidden sm:inline">{currentUser?.full_name}</span>
-                <span className="text-red-600 font-bold uppercase tracking-widest text-[9px]">{currentUser?.role}</span>
-              </div>
             </div>
           </div>
         </header>
@@ -1838,14 +1766,12 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
 
           {/* Ticket List */}
           <div ref={ticketListRef} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
-            {/* List header + search */}
-            <div className="px-5 py-4 border-b border-slate-100">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-black text-slate-800">TICKET LIST</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: '#dc2626' }}>{filteredTickets.length}</span>
-                </div>
-                {/* Refresh + Select + Export buttons */}
+            {/* List header + search — same layout as Reminder Schedule */}
+            <div className="px-5 py-3 border-b border-slate-100">
+              {/* Row 1: Title + count + Refresh + Select */}
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-black text-slate-800">TICKET LIST</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: '#dc2626' }}>{filteredTickets.length}</span>
                 <div className="flex items-center gap-2 ml-auto">
                   {currentUser?.role === 'admin' && (
                     <button onClick={() => { setSelectMode(m => !m); setSelectedIds(new Set()); }}
@@ -1861,37 +1787,36 @@ ${ticket.photo_url?`<div class="section"><div class="stitle">📸 Foto</div><div
                     Refresh
                   </button>
                 </div>
-                <div className="flex flex-1 flex-wrap gap-2 ml-auto">
-                  {/* Search */}
-                  <div className="relative flex-1 min-w-[180px]">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                    </svg>
-                    <input value={searchProject} onChange={e => setSearchProject(e.target.value)} placeholder="Cari project / issue..."
-                      className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none" />
-                  </div>
-                  <div className="relative flex-1 min-w-[150px]">
-                    <input value={searchSales} onChange={e => setSearchSales(e.target.value)} placeholder="Cari sales..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none" />
-                  </div>
-                  {/* Filters */}
-                  <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 outline-none bg-white font-medium cursor-pointer">
-                    <option value="All">Semua Status</option>
-                    {SERVICES_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
-                    className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 outline-none bg-white font-medium cursor-pointer">
-                    <option value="all">Semua Tahun</option>
-                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  {(filterStatus !== 'All' || handlerFilter || searchProject || searchSales) && (
-                    <button onClick={() => { setFilterStatus('All'); setHandlerFilter(null); setSearchProject(''); setSearchSales(''); }}
-                      className="px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition-all">
-                      Reset ✕
-                    </button>
-                  )}
+              </div>
+              {/* Row 2: Search + Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[180px]">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                  </svg>
+                  <input value={searchProject} onChange={e => setSearchProject(e.target.value)} placeholder="Cari project / issue..."
+                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none bg-gray-50 focus:bg-white transition-all" />
                 </div>
+                <div className="relative min-w-[150px]">
+                  <input value={searchSales} onChange={e => setSearchSales(e.target.value)} placeholder="🔎 Cari sales..."
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none bg-gray-50 focus:bg-white transition-all" />
+                </div>
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 outline-none bg-gray-50 font-medium cursor-pointer">
+                  <option value="All">All Status</option>
+                  {SERVICES_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-red-400 outline-none bg-gray-50 font-medium cursor-pointer">
+                  <option value="all">All Tahun</option>
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                {(filterStatus !== 'All' || handlerFilter || searchProject || searchSales) && (
+                  <button onClick={() => { setFilterStatus('All'); setHandlerFilter(null); setSearchProject(''); setSearchSales(''); }}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition-all">
+                    Reset ✕
+                  </button>
+                )}
               </div>
               {handlerFilter && (
                 <p className="text-xs text-slate-500 mt-2 font-medium">
