@@ -283,65 +283,105 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value?: 
   );
 }
 
-// ─── Pie Chart Component ─────────────────────────────────────────────────────
+// ─── Unified Donut Chart (shared with Ticketing) ─────────────────────────────
 
+function DonutChart({
+  data, title, activeKey, onSliceClick
+}: {
+  data: { name: string; value: number; color: string }[];
+  title: string;
+  activeKey?: string | null;
+  onSliceClick?: (name: string) => void;
+}) {
+  const [hov, setHov] = useState<number | null>(null);
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  if (total === 0) return (
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+      <p className="text-slate-300 text-sm text-center py-6">Belum ada data</p>
+    </div>
+  );
+
+  const cx = 60, cy = 60, R = 48, ir = 28;
+
+  const slices = data.map((d, i) => {
+    if (data.length === 1) return { ...d, i, isCircle: true, path: '' };
+    let cum = -Math.PI / 2;
+    data.slice(0, i).forEach(dd => { cum += (dd.value / total) * 2 * Math.PI; });
+    const sweep = (d.value / total) * 2 * Math.PI;
+    const x1 = cx + R * Math.cos(cum), y1 = cy + R * Math.sin(cum);
+    const x2 = cx + R * Math.cos(cum + sweep), y2 = cy + R * Math.sin(cum + sweep);
+    const xi1 = cx + ir * Math.cos(cum), yi1 = cy + ir * Math.sin(cum);
+    const xi2 = cx + ir * Math.cos(cum + sweep), yi2 = cy + ir * Math.sin(cum + sweep);
+    const large = sweep > Math.PI ? 1 : 0;
+    const path = `M${xi1} ${yi1} L${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${ir} ${ir} 0 ${large} 0 ${xi1} ${yi1}Z`;
+    return { ...d, i, isCircle: false, path };
+  });
+
+  const hovered = hov !== null ? data[hov] : activeKey ? data.find(d => d.name === activeKey) ?? null : null;
+
+  return (
+    <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)' }}>
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{title}</p>
+      <div className="flex items-center gap-3">
+        <svg width="120" height="120" viewBox="0 0 120 120" className="flex-shrink-0">
+          {slices.map(s => s.isCircle ? (
+            <g key={s.i} onClick={() => onSliceClick?.(s.name)} style={{ cursor: onSliceClick ? 'pointer' : 'default' }}
+              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}>
+              <circle cx={cx} cy={cy} r={R} fill={s.color}
+                opacity={hov === null || hov === s.i ? 1 : 0.4}
+                style={{ filter: hov === s.i ? `drop-shadow(0 0 6px ${s.color})` : 'none' }} />
+              <circle cx={cx} cy={cy} r={ir} fill="white" />
+            </g>
+          ) : (
+            <path key={s.i} d={s.path} fill={s.color}
+              opacity={hov === null || hov === s.i ? 1 : 0.4}
+              style={{ cursor: onSliceClick ? 'pointer' : 'default', transition: 'opacity 0.15s', filter: hov === s.i || activeKey === s.name ? `drop-shadow(0 0 5px ${s.color})` : 'none' }}
+              onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}
+              onClick={() => onSliceClick?.(s.name)} />
+          ))}
+          <text x={cx} y={cy - 5} textAnchor="middle" fontSize="17" fontWeight="900" fill="#1e293b">{hovered ? hovered.value : total}</text>
+          <text x={cx} y={cy + 9} textAnchor="middle" fontSize="7" fill="#94a3b8" fontWeight="600">{hovered ? hovered.name.slice(0, 9) : 'TOTAL'}</text>
+        </svg>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0 max-h-[110px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          {slices.map(s => {
+            const isActive = activeKey === s.name || hov === s.i;
+            return (
+              <div key={s.i}
+                className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition-all"
+                style={{ background: isActive ? `${s.color}18` : 'transparent', cursor: onSliceClick ? 'pointer' : 'default', outline: activeKey === s.name ? `1px solid ${s.color}` : 'none' }}
+                onMouseEnter={() => setHov(s.i)} onMouseLeave={() => setHov(null)}
+                onClick={() => onSliceClick?.(s.name)}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                <span className="text-[10px] font-semibold text-slate-600 truncate flex-1">{s.name}</span>
+                <span className="text-[10px] font-bold flex-shrink-0" style={{ color: s.color }}>{s.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Adapter: MiniPieChart uses {label} field — remap to DonutChart's {name}
 function MiniPieChart({
-  data, title, icon, activeFilter,
-  onSliceClick,
+  data, title, icon, activeFilter, onSliceClick
 }: {
   data: { label: string; value: number; color: string }[];
   title: string; icon: string;
   activeFilter?: string | null;
   onSliceClick?: (label: string) => void;
 }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return (
-    <div className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.07)', backdropFilter: 'blur(10px)' }}>
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{icon} {title}</p>
-      <p className="text-slate-400 text-xs text-center py-4">Belum ada data</p>
-    </div>
-  );
-
-  const sorted = [...data].sort((a, b) => b.value - a.value);
-
+  const mapped = data.map(d => ({ name: d.label, value: d.value, color: d.color }));
   return (
-    <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.07)', backdropFilter: 'blur(10px)' }}>
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{icon} {title}</p>
-        <span className="text-[10px] font-black text-slate-400">{total} total</span>
-      </div>
-      <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-        {sorted.map((d) => {
-          const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
-          const isActive = activeFilter === d.label;
-          return (
-            <div key={d.label}
-              className="cursor-pointer group"
-              onClick={() => onSliceClick && onSliceClick(d.label)}>
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[10px] font-semibold truncate flex-1 pr-2"
-                  style={{ color: isActive ? d.color : '#475569' }}>
-                  {d.label}
-                </span>
-                <span className="text-[10px] font-black flex-shrink-0" style={{ color: d.color }}>{d.value}</span>
-              </div>
-              <div className="relative h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
-                <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${pct}%`,
-                    background: d.color,
-                    opacity: isActive ? 1 : 0.65,
-                    boxShadow: isActive ? `0 0 6px ${d.color}80` : 'none',
-                  }} />
-              </div>
-              {isActive && (
-                <div className="text-[9px] font-bold mt-0.5" style={{ color: d.color }}>✓ Filter aktif</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <DonutChart
+      data={mapped}
+      title={`${icon} ${title}`}
+      activeKey={activeFilter ?? null}
+      onSliceClick={onSliceClick}
+    />
   );
 }
 
@@ -2334,15 +2374,15 @@ export default function ReminderSchedulePage() {
                       <table className="w-full border-collapse" style={{ tableLayout: 'fixed', background: 'transparent' }}>
                         <colgroup>
                           <col style={{ width: '3%' }} />
-                          <col style={{ width: '13%' }} />
-                          <col style={{ width: '12%' }} />
+                          <col style={{ width: '14%' }} />
+                          <col style={{ width: '11%' }} />
                           <col style={{ width: '10%' }} />
-                          <col style={{ width: '6%' }} />
                           <col style={{ width: '9%' }} />
-                          <col style={{ width: '7%' }} />
+                          <col style={{ width: '10%' }} />
                           <col style={{ width: '9%' }} />
-                          <col style={{ width: '6%' }} />
                           <col style={{ width: '8%' }} />
+                          <col style={{ width: '7%' }} />
+                          <col style={{ width: '7%' }} />
                         </colgroup>
                         <thead>
                           <tr style={{ background: 'linear-gradient(90deg,rgba(220,38,38,0.06),rgba(220,38,38,0.02))', borderBottom: '2px solid rgba(220,38,38,0.15)' }}>
@@ -2398,46 +2438,32 @@ export default function ReminderSchedulePage() {
                                 </td>
                                 {/* Kegiatan */}
                                 <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-sm">{(CATEGORY_CONFIG[r.category] ?? { icon: '📁' }).icon}</span>
+                                  <div className="flex items-start gap-1">
+                                    <span className="text-sm flex-shrink-0">{(CATEGORY_CONFIG[r.category] ?? { icon: '📁' }).icon}</span>
                                     <span className="text-[10px] font-semibold text-gray-700 leading-tight break-words">{r.category}</span>
-                                    {r.sales_name && (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(r.category) && (
-                                    <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-1"
-                                      >
-                                      ⭐ {/*r.sales_name*/}
-                                    </div>
-                                  )}
                                   </div>
-                                  {r.category === 'Troubleshooting' && (
-                                    <button
-                                      onClick={e => { e.stopPropagation(); router.push('/ticketing'); }}
-                                      className="mt-1 inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded text-blue-600 hover:text-blue-800 transition-colors"
-                                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                                      🎫 Ticketing
-                                    </button>
-                                  )}
                                 </td>
                                 {/* Sales */}
                                 <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
-                                  <div className="text-xs font-semibold text-gray-700 leading-tight truncate">{r.sales_name || '—'}</div>
-                                  {r.sales_division && <div className="text-[10px] text-purple-600 font-semibold truncate mt-0.5">{r.sales_division}</div>}
+                                  <div className="text-xs font-semibold text-gray-700 leading-tight break-words">{r.sales_name || '—'}</div>
+                                  {r.sales_division && <div className="text-[10px] text-purple-600 font-semibold mt-0.5">{r.sales_division}</div>}
                                 </td>
                                 {/* Handler */}
                                 <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                                  <div className="flex items-start gap-1">
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0 mt-0.5"
                                       style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
                                       {r.assign_name?.charAt(0)?.toUpperCase() || '?'}
                                     </div>
-                                    <span className="text-[10px] font-bold text-gray-800 truncate">{r.assign_name}</span>
+                                    <span className="text-[10px] font-bold text-gray-800 break-words leading-tight">{r.assign_name}</span>
                                   </div>
                                 </td>
                                 {/* PIC */}
                                 <td className="px-3 py-3 border-r border-slate-100/60 align-middle">
                                   {r.pic_name ? (
                                     <>
-                                      <div className="text-[10px] font-semibold text-gray-700 truncate">{r.pic_name}</div>
-                                      {r.pic_phone && <div className="text-[10px] text-gray-400 truncate">📱{r.pic_phone}</div>}
+                                      <div className="text-[10px] font-semibold text-gray-700 break-words leading-tight">{r.pic_name}</div>
+                                      {r.pic_phone && <div className="text-[10px] text-gray-400 mt-0.5 break-words">{r.pic_phone}</div>}
                                     </>
                                   ) : <span className="text-gray-300 text-xs">—</span>}
                                 </td>
