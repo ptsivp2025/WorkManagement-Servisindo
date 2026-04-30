@@ -78,7 +78,14 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
     setSaving(true);
     const { error } = await supabase.from('users').update(editingUser).eq('id', editingUser.id);
     setSaving(false);
-    if (error) { notify('error', 'Gagal: ' + error.message); return; }
+    if (error) {
+      if (error.message.includes('role_check') || error.message.includes('check constraint')) {
+        notify('error', `Role "${editingUser.role}" tidak diizinkan DB. Coba nilai lain.`);
+      } else {
+        notify('error', 'Gagal: ' + error.message);
+      }
+      return;
+    }
     notify('success', 'Berhasil diperbarui!'); setEditingUser(null); fetchAll();
   };
 
@@ -155,10 +162,11 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
               <div>
                 <label className="block text-xs font-bold mb-1 text-slate-600 tracking-widest uppercase">Role</label>
                 <select value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })} className={inp + ' bg-white'}>
+                  <option value="guest">Guest</option>
                   <option value="team">Team</option>
                   <option value="admin">Admin</option>
-                  <option value="guest">Guest</option>
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1">Guest = Ticketing saja · Team = Akses penuh · Admin = Full + Settings</p>
               </div>
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setEditingUser(null)} className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-semibold hover:bg-slate-50 text-sm">Batal</button>
@@ -245,11 +253,11 @@ export default function ServicesDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'ticketing' | 'reminder'>('ticketing');
   const [iframeKey, setIframeKey] = useState(0);
-  const [notifs, setNotifs] = useState<NotifItem[]>([]);
+  const [notifs] = useState<NotifItem[]>([]);
 
   // Register form
   const [showRegister, setShowRegister] = useState(false);
-  const [registerForm, setRegisterForm] = useState({ full_name: '', username: '', password: '', role: 'team', phone_number: '', sales_division: '' });
+  const [registerForm, setRegisterForm] = useState({ full_name: '', username: '', password: '', phone_number: '', sales_division: '' });
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [registerError, setRegisterError] = useState('');
@@ -318,17 +326,16 @@ export default function ServicesDashboard() {
   };
 
   const handleRegister = async () => {
-    const { full_name, username, password, role, phone_number, sales_division } = registerForm;
+    const { full_name, username, password, phone_number, sales_division } = registerForm;
     if (!full_name.trim() || !username.trim() || !password.trim()) { setRegisterError('Nama, username, dan password wajib diisi!'); return; }
     setRegisterLoading(true); setRegisterError('');
     try {
       const supabase = getSupabase();
-      // Check username taken
       const { data: existing } = await supabase.from('users').select('id').eq('username', username.trim()).maybeSingle();
       if (existing) { setRegisterError('Username sudah digunakan!'); setRegisterLoading(false); return; }
       const { error } = await supabase.from('users').insert([{
         full_name: full_name.trim(), username: username.trim(), password,
-        role, phone_number: phone_number.trim() || null, approved: false,
+        role: 'guest', phone_number: phone_number.trim() || null, approved: false,
         sales_division: sales_division || null,
       }]);
       if (error) { setRegisterError('Gagal mendaftar: ' + error.message); setRegisterLoading(false); return; }
@@ -412,7 +419,7 @@ export default function ServicesDashboard() {
               <div className="text-5xl mb-4">⏳</div>
               <h2 className="text-xl font-black text-slate-800 mb-2">Pendaftaran Terkirim!</h2>
               <p className="text-slate-500 text-sm mb-6 leading-relaxed">Akun Anda sedang menunggu persetujuan dari Admin. Setelah disetujui, Anda dapat login ke portal.</p>
-              <button onClick={() => { setShowRegister(false); setRegisterSuccess(false); setRegisterForm({ full_name: '', username: '', password: '', role: 'team', phone_number: '', sales_division: '' }); }}
+              <button onClick={() => { setShowRegister(false); setRegisterSuccess(false); setRegisterForm({ full_name: '', username: '', password: '', phone_number: '', sales_division: '' }); }}
                 className="px-6 py-3 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
                 Kembali ke Login
               </button>
@@ -443,14 +450,6 @@ export default function ServicesDashboard() {
                     placeholder="Password" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-slate-500 tracking-widest uppercase">Role *</label>
-                  <select value={registerForm.role} onChange={e => setRegisterForm({ ...registerForm, role: e.target.value })}
-                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium bg-white text-sm">
-                    <option value="team">Team</option>
-                    <option value="guest">Guest</option>
-                  </select>
-                </div>
-                <div>
                   <label className="block text-xs font-bold mb-1.5 text-slate-500 tracking-widest uppercase">Sales Division</label>
                   <select value={registerForm.sales_division} onChange={e => setRegisterForm({ ...registerForm, sales_division: e.target.value })}
                     className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium bg-white text-sm">
@@ -465,6 +464,9 @@ export default function ServicesDashboard() {
                   <input value={registerForm.phone_number} onChange={e => setRegisterForm({ ...registerForm, phone_number: e.target.value })}
                     className="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium bg-white text-sm"
                     placeholder="08xx-xxxx-xxxx (opsional)" />
+                </div>
+                <div className="px-3 py-2.5 rounded-xl text-xs text-slate-500 border border-slate-200 bg-slate-50">
+                  ℹ️ Role akses akan diatur oleh Admin setelah akun disetujui.
                 </div>
                 <button onClick={handleRegister} disabled={registerLoading}
                   className="w-full text-white py-3.5 rounded-xl font-bold shadow-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-sm mt-2"
@@ -557,11 +559,9 @@ export default function ServicesDashboard() {
             </div>
           </div>
 
-          {/* ── NAV MENU (Team/Admin only) — center ── */}
           <nav className="flex items-center gap-1 flex-1 justify-center">
             {menuItems.map(item => {
               const isActive = activeMenu === item.key;
-              const notifCount = item.key === 'ticketing' ? ticketNotifCount : reminderNotifCount;
               return (
                 <button key={item.key} onClick={() => handleNavClick(item.key)}
                   className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
@@ -573,19 +573,13 @@ export default function ServicesDashboard() {
                     {item.icon}
                   </span>
                   <span className="tracking-wide">{item.label}</span>
-                  {notifCount > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white" style={{ background: item.accent }}>
-                      {notifCount > 9 ? '9+' : notifCount}
-                    </span>
-                  )}
                 </button>
               );
             })}
           </nav>
 
-          {/* RIGHT: Bell + user + settings + logout */}
+          {/* RIGHT: user + settings + logout */}
           <div className="flex items-center gap-2 flex-shrink-0 py-2">
-            <NotifBell items={notifs} onTicketClick={() => handleNavClick('ticketing')} onReminderClick={() => handleNavClick('reminder')} />
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80">
               <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
