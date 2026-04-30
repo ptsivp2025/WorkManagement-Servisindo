@@ -245,7 +245,7 @@ export default function ServicesDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'ticketing' | 'reminder'>('ticketing');
   const [iframeKey, setIframeKey] = useState(0);
-  const [notifs] = useState<NotifItem[]>([]);
+  const [notifs, setNotifs] = useState<NotifItem[]>([]);
 
   // Register form
   const [showRegister, setShowRegister] = useState(false);
@@ -557,9 +557,11 @@ export default function ServicesDashboard() {
             </div>
           </div>
 
+          {/* ── NAV MENU (Team/Admin only) — center ── */}
           <nav className="flex items-center gap-1 flex-1 justify-center">
             {menuItems.map(item => {
               const isActive = activeMenu === item.key;
+              const notifCount = item.key === 'ticketing' ? ticketNotifCount : reminderNotifCount;
               return (
                 <button key={item.key} onClick={() => handleNavClick(item.key)}
                   className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
@@ -571,13 +573,19 @@ export default function ServicesDashboard() {
                     {item.icon}
                   </span>
                   <span className="tracking-wide">{item.label}</span>
+                  {notifCount > 0 && (
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-black text-white" style={{ background: item.accent }}>
+                      {notifCount > 9 ? '9+' : notifCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </nav>
 
-          {/* RIGHT: user + settings + logout */}
+          {/* RIGHT: Bell + user + settings + logout */}
           <div className="flex items-center gap-2 flex-shrink-0 py-2">
+            <NotifBell items={notifs} onTicketClick={() => handleNavClick('ticketing')} onReminderClick={() => handleNavClick('reminder')} />
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80">
               <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
