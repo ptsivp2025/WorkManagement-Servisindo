@@ -1767,113 +1767,148 @@ export default function ReminderSchedulePage() {
           </div>
         )}
 
-        {/* ── DETAIL POPUP ── */}
+        {/* ── DETAIL SIDEBAR (right panel, like image reference) ── */}
         {detailReminder && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 overflow-y-auto"
+          <div className="fixed inset-0 z-[9999] flex"
             onClick={e => { if (e.target === e.currentTarget) { setDetailReminder(null); setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); } }}>
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-2xl my-4 overflow-hidden"
-              style={{ animation: 'scale-in 0.25s ease-out', border: '1px solid rgba(0,0,0,0.1)', maxHeight: '96vh' }}>
-              <div className="px-6 py-5 relative" style={{
-                background: (() => { const c = CATEGORY_CONFIG[detailReminder.category]; return c ? `linear-gradient(135deg,${c.accent}dd,${c.accent}88)` : 'linear-gradient(135deg,#1d4ed8,#1e40af)'; })()
-              }}>
-                <button onClick={() => { setDetailReminder(null); setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/20 hover:bg-black/30 text-white flex items-center justify-center font-bold text-lg">✕</button>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <PriorityBadge priority={detailReminder.priority} onHeader />
-                  <StatusBadge status={detailReminder.status} onHeader />
-                  <CategoryBadge category={detailReminder.category} onHeader />
-                  {detailReminder.repeat !== 'none' && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                      🔁 {REPEAT_OPTIONS.find(r => r.value === detailReminder.repeat)?.label}
-                    </span>
-                  )}
-                  {detailReminder.wa_sent_h1 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/80 text-white">✅ WA H-1 Terkirim</span>
-                  )}
+            {/* Backdrop */}
+            <div className="flex-1 bg-black/40" onClick={() => { setDetailReminder(null); setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }} />
+            {/* Right panel */}
+            <div className="w-[460px] max-w-full bg-white flex flex-col overflow-hidden shadow-2xl"
+              style={{ borderLeft: '2px solid #dc2626', animation: 'slide-in-right 0.22s ease-out', maxHeight: '100vh' }}>
+
+              {/* Panel top header — ID + close */}
+              <div className="px-5 py-3 flex items-center justify-between flex-shrink-0 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: (() => { const c = CATEGORY_CONFIG[detailReminder.category]; return c ? c.accent : '#dc2626'; })() }}>
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 leading-none">Detail Jadwal</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{formatDate(detailReminder.due_date)}</p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-white leading-tight">{(detailReminder.project_name || '').trim() || ((detailReminder as any).title || '').trim() || '—'}</h2>
-                {/* Lokasi Project langsung di bawah nama project */}
-                {detailReminder.address && (
-                  <p className="text-white/80 text-sm mt-1 flex items-center gap-1.5">
-                    <span>📍</span>{detailReminder.address}
-                  </p>
-                )}
-                {detailReminder.description && <p className="text-white/70 text-xs mt-1.5">{detailReminder.description}</p>}
-                {/* Troubleshooting link ke Ticketing — navigasi internal */}
-                {detailReminder.category === 'Troubleshooting' && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={e => { e.stopPropagation(); setDetailReminder(null); router.push('/ticketing'); }}
-                    className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all hover:scale-[1.03]"
-                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.92)' }}>
-                    🎫 Buka Platform Ticketing
+                    onClick={() => window.open(window.location.href, '_blank')}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all" title="Buka di tab baru">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                   </button>
+                  <button onClick={() => { setDetailReminder(null); setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all" title="Tutup">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Status badge row */}
+              <div className="px-5 py-2.5 flex items-center gap-2 flex-shrink-0 border-b border-slate-100">
+                <StatusBadge status={detailReminder.status} />
+                <PriorityBadge priority={detailReminder.priority} />
+                <CategoryBadge category={detailReminder.category} />
+                {detailReminder.wa_sent_h1 && (
+                  <span className="text-[10px] font-semibold text-emerald-600">✓ WA H-1</span>
                 )}
               </div>
 
-              <div className="p-5 space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 180px)' }}>
-                {/* Jadwal & Assign */}
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(220,38,38,0.05)', borderBottom: '1px solid rgba(220,38,38,0.1)' }}>
-                    <span className="text-sm">👤</span>
-                    <p className="text-[11px] font-bold tracking-widest uppercase text-red-700">Informasi Assign & Jadwal</p>
-                  </div>
-                  <div className="divide-y divide-slate-100">
-                    <div className="flex items-center px-4 py-3 gap-3">
-                      <span className="text-sm flex-shrink-0">👷</span>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Assign To</p>
-                        <p className="text-sm font-bold text-slate-800">{detailReminder.assign_name}</p>
-                        <p className="text-[11px] text-slate-500">@{detailReminder.assigned_to}</p>
+              {/* Project name */}
+              <div className="px-5 py-3 border-b border-slate-100 flex-shrink-0">
+                <h2 className="text-base font-black text-slate-800 leading-snug">{(detailReminder.project_name || '').trim() || ((detailReminder as any).title || '').trim() || '—'}</h2>
+                {detailReminder.address && (
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    {detailReminder.address}
+                  </p>
+                )}
+              </div>
+
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto">
+
+                {/* Informasi Assign */}
+                <div className="border-b border-slate-100">
+                  <button className="w-full px-5 py-3 flex items-center justify-between text-left">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                      <span className="text-sm font-semibold text-slate-700">Informasi Handler</span>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>
+                  </button>
+                  <div className="px-5 pb-3 divide-y divide-slate-50">
+                    <div className="flex items-center gap-3 py-2.5">
+                      <svg className="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Assign To</p>
+                        <p className="text-sm font-semibold text-slate-800">{detailReminder.assign_name}</p>
+                        <p className="text-[11px] text-slate-400">@{detailReminder.assigned_to}</p>
                       </div>
                     </div>
-                    <div className="flex items-center px-4 py-3 gap-3">
-                      <span className="text-sm flex-shrink-0">📅</span>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Jadwal</p>
-                        <p className="text-sm font-bold text-slate-800">{formatDate(detailReminder.due_date)}</p>
-                        <p className="text-[11px] text-slate-500">⏰ {detailReminder.due_time}</p>
+                    <div className="flex items-center gap-3 py-2.5">
+                      <svg className="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Tanggal & Waktu</p>
+                        <p className="text-sm font-semibold text-slate-800">{formatDate(detailReminder.due_date)}</p>
+                        <p className="text-[11px] text-slate-400">{detailReminder.due_time}</p>
                       </div>
                     </div>
+                    {detailReminder.repeat !== 'none' && (
+                      <div className="flex items-center gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Pengulangan</p>
+                          <p className="text-sm font-semibold text-slate-800">{REPEAT_OPTIONS.find(r => r.value === detailReminder.repeat)?.label}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Informasi Project */}
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(99,102,241,0.05)', borderBottom: '1px solid rgba(99,102,241,0.1)' }}>
-                    <span className="text-sm">🏢</span>
-                    <p className="text-[11px] font-bold tracking-widest uppercase text-indigo-700">Informasi Project</p>
-                  </div>
-                  <div className="divide-y divide-slate-100">
+                {/* Detail Project */}
+                <div className="border-b border-slate-100">
+                  <button className="w-full px-5 py-3 flex items-center justify-between text-left">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                      <span className="text-sm font-semibold text-slate-700">Detail Project</span>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>
+                  </button>
+                  <div className="px-5 pb-3 divide-y divide-slate-50">
                     {detailReminder.product && (
-                      <div className="flex items-center px-4 py-3 gap-3">
-                        <span className="text-sm flex-shrink-0">📦</span>
-                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Product / Unit</p><p className="text-sm font-semibold text-slate-800">{detailReminder.product}</p></div>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Product / Unit</p><p className="text-sm font-semibold text-slate-800">{detailReminder.product}</p></div>
                       </div>
                     )}
                     {(detailReminder.sales_name || detailReminder.sales_division) && (
-                      <div className="flex items-center px-4 py-3 gap-3">
-                        <span className="text-sm flex-shrink-0">👤</span>
-                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sales & Divisi</p><p className="text-sm font-semibold text-slate-800">{[detailReminder.sales_name, detailReminder.sales_division].filter(Boolean).join(' / ')}</p></div>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Sales & Divisi</p>
+                          <p className="text-sm font-semibold text-slate-800">{detailReminder.sales_name}</p>
+                          {detailReminder.sales_division && <p className="text-[11px] text-slate-400">{detailReminder.sales_division}</p>}
+                        </div>
                       </div>
                     )}
                     {detailReminder.pic_name && (
-                      <div className="flex items-center px-4 py-3 gap-3">
-                        <span className="text-sm flex-shrink-0">🙋</span>
-                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nama PIC Project</p><p className="text-sm font-semibold text-slate-800">{detailReminder.pic_name}</p></div>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Nama PIC</p><p className="text-sm font-semibold text-slate-800">{detailReminder.pic_name}</p></div>
                       </div>
                     )}
                     {detailReminder.pic_phone && (
-                      <div className="flex items-center px-4 py-3 gap-3">
-                        <span className="text-sm flex-shrink-0">📱</span>
-                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">No. Telepon PIC</p>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Telepon PIC</p>
                           <a href={`tel:${detailReminder.pic_phone}`} className="text-sm font-semibold text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{detailReminder.pic_phone}</a>
                         </div>
                       </div>
                     )}
                     {detailReminder.description && (
-                      <div className="flex items-start px-4 py-3 gap-3">
-                        <span className="text-sm flex-shrink-0 mt-0.5">📝</span>
-                        <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Deskripsi</p><p className="text-sm font-medium text-slate-700 leading-relaxed">{detailReminder.description}</p></div>
+                      <div className="flex items-start gap-3 py-2.5">
+                        <svg className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <div><p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Deskripsi</p><p className="text-sm text-slate-700 leading-relaxed">{detailReminder.description}</p></div>
                       </div>
                     )}
                   </div>
@@ -1881,197 +1916,147 @@ export default function ReminderSchedulePage() {
 
                 {/* Catatan */}
                 {detailReminder.notes && (
-                  <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.04)' }}>
-                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
-                      <span className="text-sm">📝</span>
-                      <p className="text-[11px] font-bold tracking-widest uppercase text-amber-700">Catatan</p>
-                    </div>
-                    <div className="px-4 py-3">
-                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{detailReminder.notes}</p>
+                  <div className="border-b border-slate-100">
+                    <div className="px-5 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                        <span className="text-sm font-semibold text-slate-700">Catatan</span>
+                      </div>
+                      <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line pl-6">{detailReminder.notes}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Update Status */}
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(16,185,129,0.2)', background: '#fff' }}>
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.05)', borderBottom: '1px solid rgba(16,185,129,0.12)' }}>
-                    <span className="text-sm">🔄</span>
-                    <p className="text-[11px] font-bold tracking-widest uppercase text-emerald-700">Update Status</p>
-                  </div>
-                  <div className="p-4">
-                  {detailReminder.status === 'done' ? (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1.5px solid rgba(16,185,129,0.35)' }}>
-                      <span className="text-lg">✅</span>
-                      <div>
-                        <p className="text-xs font-bold text-emerald-700">Jadwal Selesai</p>
-                        <p className="text-[10px] text-emerald-600">Status completed tidak dapat diubah kembali.</p>
-                      </div>
-                    </div>
-                  ) : (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {(Object.keys(STATUS_CONFIG) as Status[]).filter(s => s !== 'done' || detailReminder.status !== 'done').map(s => {
-                      const c = STATUS_CONFIG[s];
-                      const isActive = (pendingStatus ?? detailReminder.status) === s;
-                      return (
-                        <button key={s}
-                          onClick={() => {
-                            setPendingStatus(s);
-                            if (s !== 'done') { setStatusPhoto(null); setStatusPhotoPreview(null); }
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive ? 'ring-2 ring-offset-1 scale-105' : 'opacity-70 hover:opacity-100'}`}
-                          style={{ background: c.bg, color: c.color, border: `2px solid ${c.border}`, '--tw-ring-color': c.border } as React.CSSProperties}>
-                          {c.icon} {c.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  )}
-
-                  {/* Photo upload - wajib jika status Completed, sembunyikan jika sudah done */}
-                  {detailReminder.status !== 'done' && (pendingStatus ?? detailReminder.status) === 'done' && (
-                    <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(16,185,129,0.07)', border: '1.5px solid rgba(16,185,129,0.3)' }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: '#059669' }}>
-                        📸 Foto Bukti Selesai <span className="text-red-500">*Wajib</span>
-                      </p>
-                      <input
-                        ref={statusPhotoRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setStatusPhoto(file);
-                            const reader = new FileReader();
-                            reader.onload = ev => setStatusPhotoPreview(ev.target?.result as string);
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      {statusPhotoPreview ? (
-                        <div className="relative">
-                          <img src={statusPhotoPreview} alt="preview" className="w-full max-h-40 object-cover rounded-lg" />
-                          <button
-                            onClick={() => { setStatusPhoto(null); setStatusPhotoPreview(null); if (statusPhotoRef.current) statusPhotoRef.current.value = ''; }}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600">
-                            ✕
-                          </button>
-                          <p className="text-[11px] text-emerald-700 font-semibold mt-1.5">✅ {statusPhoto?.name}</p>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => statusPhotoRef.current?.click()}
-                          className="w-full border-2 border-dashed rounded-xl py-6 flex flex-col items-center gap-2 transition-all hover:bg-emerald-50"
-                          style={{ borderColor: 'rgba(16,185,129,0.5)' }}>
-                          <span className="text-2xl">📷</span>
-                          <span className="text-xs font-bold text-emerald-700">Klik untuk upload foto</span>
-                          <span className="text-[10px] text-gray-400">JPG, PNG, WEBP — maks. 10MB</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Tombol Update Status */}
-                  {pendingStatus && pendingStatus !== detailReminder.status && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }}
-                        className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"
-                        style={{ background: 'rgba(0,0,0,0.06)', color: '#64748b', border: '1px solid rgba(0,0,0,0.12)' }}>
-                        Batal
-                      </button>
-                      <button
-                        onClick={handleConfirmStatusUpdate}
-                        disabled={updatingStatus || (pendingStatus === 'done' && !statusPhoto)}
-                        className="flex-1 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ background: 'linear-gradient(135deg,#059669,#047857)', boxShadow: '0 3px 12px rgba(5,150,105,0.35)' }}>
-                        {updatingStatus
-                          ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                        }
-                        {updatingStatus ? 'Menyimpan...' : 'Konfirmasi Update'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </div>
-
-                {/* Foto Bukti Selesai - tampil jika status done dan ada foto */}
+                {/* Foto bukti selesai */}
                 {detailReminder.status === 'done' && detailReminder.completion_photo_url && (
-                  <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.05)' }}>
-                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.12)', borderBottom: '1px solid rgba(16,185,129,0.2)' }}>
-                      <span className="text-base">📸</span>
-                      <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#059669' }}>Foto Bukti Selesai</p>
-                    </div>
-                    <div className="p-3">
-                      <img
-                        src={detailReminder.completion_photo_url}
-                        alt="Foto bukti selesai"
-                        className="w-full rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                        style={{ maxHeight: 220 }}
-                        onClick={() => window.open(detailReminder.completion_photo_url, '_blank')}
-                      />
-                      <a
-                        href={detailReminder.completion_photo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 transition-colors">
-                        🔗 Buka foto di tab baru
+                  <div className="border-b border-slate-100">
+                    <div className="px-5 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span className="text-sm font-semibold text-slate-700">Foto Bukti Selesai</span>
+                      </div>
+                      <img src={detailReminder.completion_photo_url} alt="Foto bukti" className="w-full rounded-xl object-cover cursor-pointer hover:opacity-90 transition-opacity" style={{ maxHeight: 200 }} onClick={() => window.open(detailReminder.completion_photo_url, '_blank')} />
+                      <a href={detailReminder.completion_photo_url} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 pl-0">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        Buka di tab baru
                       </a>
                     </div>
                   </div>
                 )}
 
-                {/* Action buttons di detail popup */}
+                {/* Update Status */}
+                <div className="border-b border-slate-100">
+                  <div className="px-5 py-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                      <span className="text-sm font-semibold text-slate-700">Update Status</span>
+                    </div>
+                    {detailReminder.status === 'done' ? (
+                      <div className="flex items-center gap-2 py-2 pl-6">
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <p className="text-sm text-emerald-700 font-semibold">Jadwal telah selesai</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 pl-6">
+                        {(Object.keys(STATUS_CONFIG) as Status[]).map(s => {
+                          const c = STATUS_CONFIG[s];
+                          const isActive = (pendingStatus ?? detailReminder.status) === s;
+                          return (
+                            <button key={s}
+                              onClick={() => { setPendingStatus(s); if (s !== 'done') { setStatusPhoto(null); setStatusPhotoPreview(null); } }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                              style={{
+                                background: isActive ? c.bg : '#fff',
+                                color: c.color,
+                                borderColor: isActive ? c.border : '#e2e8f0',
+                                fontWeight: isActive ? 700 : 500,
+                              }}>
+                              {c.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Photo upload */}
+                    {detailReminder.status !== 'done' && (pendingStatus ?? detailReminder.status) === 'done' && (
+                      <div className="mt-3 pl-6">
+                        <p className="text-[11px] font-semibold text-emerald-700 mb-2">Foto Bukti Selesai <span className="text-red-500">*</span></p>
+                        <input ref={statusPhotoRef} type="file" accept="image/*" className="hidden"
+                          onChange={e => { const file = e.target.files?.[0]; if (file) { setStatusPhoto(file); const reader = new FileReader(); reader.onload = ev => setStatusPhotoPreview(ev.target?.result as string); reader.readAsDataURL(file); } }} />
+                        {statusPhotoPreview ? (
+                          <div className="relative">
+                            <img src={statusPhotoPreview} alt="preview" className="w-full max-h-36 object-cover rounded-xl" />
+                            <button onClick={() => { setStatusPhoto(null); setStatusPhotoPreview(null); if (statusPhotoRef.current) statusPhotoRef.current.value = ''; }}
+                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">✕</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => statusPhotoRef.current?.click()}
+                            className="w-full border-2 border-dashed rounded-xl py-5 flex flex-col items-center gap-1.5 transition-all hover:bg-emerald-50"
+                            style={{ borderColor: 'rgba(16,185,129,0.4)' }}>
+                            <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span className="text-xs font-semibold text-emerald-600">Klik untuk upload foto</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {pendingStatus && pendingStatus !== detailReminder.status && (
+                      <div className="flex gap-2 mt-3 pl-6">
+                        <button onClick={() => { setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }}
+                          className="flex-1 py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50">Batal</button>
+                        <button onClick={handleConfirmStatusUpdate}
+                          disabled={updatingStatus || (pendingStatus === 'done' && !statusPhoto)}
+                          className="flex-1 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+                          {updatingStatus ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>}
+                          {updatingStatus ? 'Menyimpan...' : 'Konfirmasi'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
                 {(isAdmin || currentUser?.role === 'team') && (
-                  <div className="flex gap-3 pt-2 flex-wrap">
-                    {/* Re-Schedule — admin + team PTS bisa */}
+                  <div className="px-5 py-3 flex flex-wrap gap-2">
                     {detailReminder.status !== 'done' && (
-                      <button onClick={() => { setRescheduleTarget(detailReminder); }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg,#d97706,#b45309)', color: 'white', boxShadow: '0 4px 12px rgba(217,119,6,0.3)' }}>
-                        📅 Re-Schedule
+                      <button onClick={() => setRescheduleTarget(detailReminder)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+                        style={{ background: 'linear-gradient(135deg,#d97706,#b45309)' }}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Re-Schedule
                       </button>
                     )}
-                    {/* Resend Form Review — muncul jika kategori trigger & status done & ada sales_name */}
-                    {(isAdmin || currentUser?.role === 'team') &&
-                      detailReminder.status === 'done' &&
-                      detailReminder.sales_name?.trim() &&
-                      (REVIEW_TRIGGER_CATEGORIES as readonly string[]).includes(detailReminder.category) && (
-                      <button
-                        onClick={() => handleResendFormReview(detailReminder)}
-                        disabled={resendingFormReview}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] disabled:opacity-60"
-                        style={{ background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: 'white', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
-                        {resendingFormReview
-                          ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          : '⭐'}
-                        {resendingFormReview ? 'Mengirim...' : 'Resend Form Review'}
-                      </button>
-                    )}
-                    {/* Send WA — admin only */}
                     {isAdmin && (
                       <button onClick={() => handleSendWA(detailReminder)} disabled={sendingWA === detailReminder.id}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] disabled:opacity-60"
-                        style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)', color: 'white', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}>
-                        {sendingWA === detailReminder.id
-                          ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          : '💬'}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-60"
+                        style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L0 24l6.312-1.518A11.933 11.933 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.894 0-3.664-.53-5.17-1.447l-.37-.22-3.747.901.937-3.65-.24-.382A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
                         Kirim WA
                       </button>
                     )}
-                    {/* Edit — admin only */}
                     {isAdmin && (
                       <button onClick={() => openEdit(detailReminder)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: 'white', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
-                        ✏️ Edit
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
+                        style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)' }}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit
                       </button>
                     )}
-                    {/* TIDAK ADA tombol Hapus di detail popup — hapus hanya dari ACT di tabel */}
                   </div>
                 )}
+
               </div>
+
+              {/* Bottom close button */}
+              <div className="px-5 py-3 border-t border-slate-100 flex gap-2 flex-shrink-0">
+                <button onClick={() => { setDetailReminder(null); setPendingStatus(null); setStatusPhoto(null); setStatusPhotoPreview(null); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+                  Tutup
+                </button>
+              </div>
+
             </div>
           </div>
         )}
@@ -2557,9 +2542,9 @@ export default function ReminderSchedulePage() {
           from { opacity:0; transform:scale(0.92); }
           to   { opacity:1; transform:scale(1); }
         }
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-          40% { transform: scale(1); opacity: 1; }
+        @keyframes slide-in-right {
+          from { opacity:0; transform:translateX(32px); }
+          to   { opacity:1; transform:translateX(0); }
         }
         select option { background: #ffffff; color: #1e293b; }
         input[type="date"]::-webkit-calendar-picker-indicator,
