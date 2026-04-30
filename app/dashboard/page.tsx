@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // ── Supabase clients — lazy init ─────────────────────────────────────────────
 let _supabase: ReturnType<typeof createClient> | null = null;
-let _supabasePTS: ReturnType<typeof createClient> | null = null;
 
 function getSupabase() {
   if (!_supabase) {
@@ -16,25 +15,12 @@ function getSupabase() {
   }
   return _supabase;
 }
-function getSupabasePTS() {
-  if (!_supabasePTS) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_PTS_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PTS_ANON_KEY;
-    if (!url || !key) throw new Error('SUPABASE_PTS env not set');
-    _supabasePTS = createClient(url, key);
-  }
-  return _supabasePTS;
-}
 
 interface User {
   id: string; username: string; password: string;
   full_name: string; role: string; phone_number?: string;
   approved?: boolean;
 }
-interface NotifItem {
-  id: string; title: string; subtitle: string; type: 'ticket' | 'reminder';
-}
-
 // ── Account Settings Modal ────────────────────────────────────────────────────
 function AccountSettingsModal({ onClose }: { onClose: () => void }) {
   const supabase = getSupabase();
@@ -198,50 +184,6 @@ function AccountSettingsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Notification Bell (hanya di ticketing header) ─────────────────────────────
-function NotifBell({ items, onTicketClick, onReminderClick }: {
-  items: NotifItem[]; onTicketClick: () => void; onReminderClick: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
-  }, []);
-  return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(o => !o)} className="relative p-2 rounded-xl transition-all hover:bg-red-50 border border-transparent hover:border-red-200" title="Notifikasi">
-        <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        {items.length > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white bg-red-500 animate-pulse">{items.length > 9 ? '9+' : items.length}</span>}
-      </button>
-      {open && (
-        <div className="absolute top-full mt-2 right-0 z-[9999] rounded-2xl shadow-2xl overflow-hidden" style={{ width: 300, background: 'rgba(255,255,255,0.97)', border: '1.5px solid rgba(220,38,38,0.2)', backdropFilter: 'blur(16px)' }}>
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between" style={{ background: 'rgba(220,38,38,0.05)' }}>
-            <span className="text-sm font-bold text-red-700">🔔 Notifikasi</span>
-            {items.length > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-black text-white bg-red-500">{items.length}</span>}
-          </div>
-          <div className="max-h-64 overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center py-8 gap-2"><span className="text-3xl opacity-30">✅</span><p className="text-xs text-slate-400 font-medium">Tidak ada notifikasi</p></div>
-            ) : items.map(item => (
-              <button key={item.id} onClick={() => { item.type === 'ticket' ? onTicketClick() : onReminderClick(); setOpen(false); }}
-                className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-slate-50 border-b border-slate-100/80 last:border-0 transition-colors">
-                <span className="text-base mt-0.5">{item.type === 'ticket' ? '🎫' : '⏰'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{item.title}</p>
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">{item.subtitle}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function ServicesDashboard() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -253,7 +195,6 @@ export default function ServicesDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'ticketing' | 'reminder'>('ticketing');
   const [iframeKey, setIframeKey] = useState(0);
-  const [notifs] = useState<NotifItem[]>([]);
 
   // Register form
   const [showRegister, setShowRegister] = useState(false);
@@ -287,26 +228,6 @@ export default function ServicesDashboard() {
     };
     check(); const iv = setInterval(check, 60000); return () => clearInterval(iv);
   }, []);
-
-  const fetchNotifs = useCallback(async () => {
-    if (!currentUser) return;
-    const items: NotifItem[] = [];
-    try {
-      const pts = getSupabasePTS();
-      const { data } = await pts.from('tickets').select('id, project_name, services_status')
-        .eq('current_team', 'Team Services').neq('services_status', 'Solved').limit(15);
-      (data ?? []).forEach((t: any) => items.push({ id: `t-${t.id}`, title: t.project_name, subtitle: `Status: ${t.services_status}`, type: 'ticket' }));
-    } catch {}
-    try {
-      const supabase = getSupabase();
-      const { data } = await supabase.from('reminders').select('id, project_name, category, due_date')
-        .neq('status', 'done').neq('status', 'cancelled').order('due_date', { ascending: true }).limit(15);
-      (data ?? []).forEach((r: any) => items.push({ id: `r-${r.id}`, title: r.project_name, subtitle: `${r.category} · ${r.due_date}`, type: 'reminder' }));
-    } catch {}
-    setNotifs(items);
-  }, [currentUser]);
-
-  useEffect(() => { if (!currentUser) return; fetchNotifs(); const iv = setInterval(fetchNotifs, 30000); return () => clearInterval(iv); }, [fetchNotifs, currentUser]);
 
   const handleLogin = async () => {
     if (!loginForm.username || !loginForm.password) { setLoginError('Username dan password wajib diisi!'); return; }
@@ -500,8 +421,6 @@ export default function ServicesDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Bell only for ticketing */}
-              <NotifBell items={notifs.filter(n => n.type === 'ticket')} onTicketClick={() => {}} onReminderClick={() => {}} />
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg,#dc2626,#991b1b)' }}>
                   {currentUser?.full_name?.charAt(0)?.toUpperCase() ?? 'U'}
@@ -538,8 +457,6 @@ export default function ServicesDashboard() {
   ];
 
   const activeItem = menuItems.find(m => m.key === activeMenu)!;
-  const ticketNotifCount = notifs.filter(n => n.type === 'ticket').length;
-  const reminderNotifCount = notifs.filter(n => n.type === 'reminder').length;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden"
